@@ -1,0 +1,1590 @@
+From 47e640af2e492cc28778dd6f894d50313f7fba75 Mon Sep 17 00:00:00 2001
+From: Jeremy Sowden <jeremy@azazel.net>
+Date: Wed, 7 Aug 2019 15:17:01 +0100
+Subject: netfilter: add missing IS_ENABLED(CONFIG_NF_TABLES) check to header-file.
+
+From: Jeremy Sowden <jeremy@azazel.net>
+
+commit 47e640af2e492cc28778dd6f894d50313f7fba75 upstream.
+
+nf_tables.h defines an API comprising several inline functions and
+macros that depend on the nft member of struct net.  However, this is
+only defined is CONFIG_NF_TABLES is enabled.  Added preprocessor checks
+to ensure that nf_tables.h will compile if CONFIG_NF_TABLES is disabled.
+
+Signed-off-by: Jeremy Sowden <jeremy@azazel.net>
+Signed-off-by: Pablo Neira Ayuso <pablo@netfilter.org>
+Link: https://lore.kernel.org/netfilter-devel/20190920094925.aw7actk4tdnk3rke@salvia/T/
+Fixes: 3c171f496ef5 ("netfilter: bridge: add connection tracking system")
+Reported-by: Adam Borowski <kilobyte@angband.pl>
+Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+
+---
+ include/net/netfilter/nf_tables.h |    4 ++++
+ 1 file changed, 4 insertions(+)
+
+--- a/include/net/netfilter/nf_tables.h
++++ b/include/net/netfilter/nf_tables.h
+@@ -1206,6 +1206,8 @@ void nft_trace_notify(struct nft_tracein
+ #define MODULE_ALIAS_NFT_OBJ(type) \
+ 	MODULE_ALIAS("nft-obj-" __stringify(type))
+ 
++#if IS_ENABLED(CONFIG_NF_TABLES)
++
+ /*
+  * The gencursor defines two generations, the currently active and the
+  * next one. Objects contain a bitmask of 2 bits specifying the generations
+@@ -1279,6 +1281,8 @@ static inline void nft_set_elem_change_a
+ 	ext->genmask ^= nft_genmask_next(net);
+ }
+ 
++#endif /* IS_ENABLED(CONFIG_NF_TABLES) */
++
+ /*
+  * We use a free bit in the genmask field to indicate the element
+  * is busy, meaning it is currently being processed either by
+From 763719771e84b8c8c2f53af668cdc905faa608de Mon Sep 17 00:00:00 2001
+From: Jon Hunter <jonathanh@nvidia.com>
+Date: Wed, 21 Aug 2019 16:02:40 +0100
+Subject: clocksource/drivers/timer-of: Do not warn on deferred probe
+
+From: Jon Hunter <jonathanh@nvidia.com>
+
+commit 763719771e84b8c8c2f53af668cdc905faa608de upstream.
+
+Deferred probe is an expected return value for clk_get() on many
+platforms. The driver deals with it properly, so there's no need
+to output a warning that may potentially confuse users.
+
+Signed-off-by: Jon Hunter <jonathanh@nvidia.com>
+Signed-off-by: Daniel Lezcano <daniel.lezcano@linaro.org>
+Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+
+---
+ drivers/clocksource/timer-of.c |    6 ++++--
+ 1 file changed, 4 insertions(+), 2 deletions(-)
+
+--- a/drivers/clocksource/timer-of.c
++++ b/drivers/clocksource/timer-of.c
+@@ -113,8 +113,10 @@ static __init int timer_of_clk_init(stru
+ 	of_clk->clk = of_clk->name ? of_clk_get_by_name(np, of_clk->name) :
+ 		of_clk_get(np, of_clk->index);
+ 	if (IS_ERR(of_clk->clk)) {
+-		pr_err("Failed to get clock for %pOF\n", np);
+-		return PTR_ERR(of_clk->clk);
++		ret = PTR_ERR(of_clk->clk);
++		if (ret != -EPROBE_DEFER)
++			pr_err("Failed to get clock for %pOF\n", np);
++		goto out;
+ 	}
+ 
+ 	ret = clk_prepare_enable(of_clk->clk);
+From 14e019df1e64c8b19ce8e0b3da25b6f40c8716be Mon Sep 17 00:00:00 2001
+From: Jon Hunter <jonathanh@nvidia.com>
+Date: Wed, 21 Aug 2019 16:02:41 +0100
+Subject: clocksource/drivers: Do not warn on probe defer
+
+From: Jon Hunter <jonathanh@nvidia.com>
+
+commit 14e019df1e64c8b19ce8e0b3da25b6f40c8716be upstream.
+
+Deferred probe is an expected return value on many platforms and so
+there's no need to output a warning that may potentially confuse users.
+
+Signed-off-by: Jon Hunter <jonathanh@nvidia.com>
+Signed-off-by: Daniel Lezcano <daniel.lezcano@linaro.org>
+Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+
+---
+ drivers/clocksource/timer-probe.c |    4 +++-
+ 1 file changed, 3 insertions(+), 1 deletion(-)
+
+--- a/drivers/clocksource/timer-probe.c
++++ b/drivers/clocksource/timer-probe.c
+@@ -29,7 +29,9 @@ void __init timer_probe(void)
+ 
+ 		ret = init_func_ret(np);
+ 		if (ret) {
+-			pr_err("Failed to initialize '%pOF': %d\n", np, ret);
++			if (ret != -EPROBE_DEFER)
++				pr_err("Failed to initialize '%pOF': %d\n", np,
++				       ret);
+ 			continue;
+ 		}
+ 
+From e16e37efb4c9eb7bcb9dab756c975040c5257e98 Mon Sep 17 00:00:00 2001
+From: Nicholas Kazlauskas <nicholas.kazlauskas@amd.com>
+Date: Mon, 10 Jun 2019 08:47:57 -0400
+Subject: drm/amd/display: Allow cursor async updates for framebuffer swaps
+
+From: Nicholas Kazlauskas <nicholas.kazlauskas@amd.com>
+
+commit e16e37efb4c9eb7bcb9dab756c975040c5257e98 upstream.
+
+[Why]
+We previously allowed framebuffer swaps as async updates for cursor
+planes but had to disable them due to a bug in DRM with async update
+handling and incorrect ref counting. The check to block framebuffer
+swaps has been added to DRM for a while now, so this check is redundant.
+
+The real fix that allows this to properly in DRM has also finally been
+merged and is getting backported into stable branches, so dropping
+this now seems to be the right time to do so.
+
+[How]
+Drop the redundant check for old_fb != new_fb.
+
+With the proper fix in DRM, this should also fix some cursor stuttering
+issues with xf86-video-amdgpu since it double buffers the cursor.
+
+IGT tests that swap framebuffers (-varying-size for example) should
+also pass again.
+
+Signed-off-by: Nicholas Kazlauskas <nicholas.kazlauskas@amd.com>
+Acked-by: Alex Deucher <alexander.deucher@amd.com>
+Reviewed-by: David Francis <david.francis@amd.com>
+Signed-off-by: Alex Deucher <alexander.deucher@amd.com>
+Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+
+---
+ drivers/gpu/drm/amd/display/amdgpu_dm/amdgpu_dm.c |   10 ----------
+ 1 file changed, 10 deletions(-)
+
+--- a/drivers/gpu/drm/amd/display/amdgpu_dm/amdgpu_dm.c
++++ b/drivers/gpu/drm/amd/display/amdgpu_dm/amdgpu_dm.c
+@@ -4548,20 +4548,10 @@ static int dm_plane_atomic_check(struct
+ static int dm_plane_atomic_async_check(struct drm_plane *plane,
+ 				       struct drm_plane_state *new_plane_state)
+ {
+-	struct drm_plane_state *old_plane_state =
+-		drm_atomic_get_old_plane_state(new_plane_state->state, plane);
+-
+ 	/* Only support async updates on cursor planes. */
+ 	if (plane->type != DRM_PLANE_TYPE_CURSOR)
+ 		return -EINVAL;
+ 
+-	/*
+-	 * DRM calls prepare_fb and cleanup_fb on new_plane_state for
+-	 * async commits so don't allow fb changes.
+-	 */
+-	if (old_plane_state->fb != new_plane_state->fb)
+-		return -EINVAL;
+-
+ 	return 0;
+ }
+ 
+From 43d10d30df156f7834fa91aecb69614fefc8bb0a Mon Sep 17 00:00:00 2001
+From: Nicholas Kazlauskas <nicholas.kazlauskas@amd.com>
+Date: Wed, 31 Jul 2019 09:45:16 -0400
+Subject: drm/amd/display: Skip determining update type for async updates
+
+From: Nicholas Kazlauskas <nicholas.kazlauskas@amd.com>
+
+commit 43d10d30df156f7834fa91aecb69614fefc8bb0a upstream.
+
+[Why]
+By passing through the dm_determine_update_type_for_commit for atomic
+commits that can be done asynchronously we are incurring a
+performance penalty by locking access to the global private object
+and holding that access until the end of the programming sequence.
+
+This is also allocating a new large dc_state on every access in addition
+to retaining all the references on each stream and plane until the end
+of the programming sequence.
+
+[How]
+Shift the determination for async update before validation. Return early
+if it's going to be an async update.
+
+Signed-off-by: Nicholas Kazlauskas <nicholas.kazlauskas@amd.com>
+Acked-by: Alex Deucher <alexander.deucher@amd.com>
+Reviewed-by: David Francis <david.francis@amd.com>
+Signed-off-by: Alex Deucher <alexander.deucher@amd.com>
+Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+
+---
+ drivers/gpu/drm/amd/display/amdgpu_dm/amdgpu_dm.c |   27 ++++++++++++++++------
+ 1 file changed, 20 insertions(+), 7 deletions(-)
+
+--- a/drivers/gpu/drm/amd/display/amdgpu_dm/amdgpu_dm.c
++++ b/drivers/gpu/drm/amd/display/amdgpu_dm/amdgpu_dm.c
+@@ -7274,6 +7274,26 @@ static int amdgpu_dm_atomic_check(struct
+ 	if (ret)
+ 		goto fail;
+ 
++	if (state->legacy_cursor_update) {
++		/*
++		 * This is a fast cursor update coming from the plane update
++		 * helper, check if it can be done asynchronously for better
++		 * performance.
++		 */
++		state->async_update =
++			!drm_atomic_helper_async_check(dev, state);
++
++		/*
++		 * Skip the remaining global validation if this is an async
++		 * update. Cursor updates can be done without affecting
++		 * state or bandwidth calcs and this avoids the performance
++		 * penalty of locking the private state object and
++		 * allocating a new dc_state.
++		 */
++		if (state->async_update)
++			return 0;
++	}
++
+ 	/* Check scaling and underscan changes*/
+ 	/* TODO Removed scaling changes validation due to inability to commit
+ 	 * new stream into context w\o causing full reset. Need to
+@@ -7326,13 +7346,6 @@ static int amdgpu_dm_atomic_check(struct
+ 			ret = -EINVAL;
+ 			goto fail;
+ 		}
+-	} else if (state->legacy_cursor_update) {
+-		/*
+-		 * This is a fast cursor update coming from the plane update
+-		 * helper, check if it can be done asynchronously for better
+-		 * performance.
+-		 */
+-		state->async_update = !drm_atomic_helper_async_check(dev, state);
+ 	}
+ 
+ 	/* Must be success */
+From bd200d190f45b62c006d1ad0a63eeffd87db7a47 Mon Sep 17 00:00:00 2001
+From: Nicholas Kazlauskas <nicholas.kazlauskas@amd.com>
+Date: Wed, 31 Jul 2019 10:33:54 -0400
+Subject: drm/amd/display: Don't replace the dc_state for fast updates
+
+From: Nicholas Kazlauskas <nicholas.kazlauskas@amd.com>
+
+commit bd200d190f45b62c006d1ad0a63eeffd87db7a47 upstream.
+
+[Why]
+DRM private objects have no hw_done/flip_done fencing mechanism on their
+own and cannot be used to sequence commits accordingly.
+
+When issuing commits that don't touch the same set of hardware resources
+like page-flips on different CRTCs we can run into the issue below
+because of this:
+
+1. Client requests non-blocking Commit #1, has a new dc_state #1,
+state is swapped, commit tail is deferred to work queue
+
+2. Client requests non-blocking Commit #2, has a new dc_state #2,
+state is swapped, commit tail is deferred to work queue
+
+3. Commit #2 work starts, commit tail finishes,
+atomic state is cleared, dc_state #1 is freed
+
+4. Commit #1 work starts,
+commit tail encounters null pointer deref on dc_state #1
+
+In order to change the DC state as in the private object we need to
+ensure that we wait for all outstanding commits to finish and that
+any other pending commits must wait for the current one to finish as
+well.
+
+We do this for MEDIUM and FULL updates. But not for FAST updates, nor
+would we want to since it would cause stuttering from the delays.
+
+FAST updates that go through dm_determine_update_type_for_commit always
+create a new dc_state and lock the DRM private object if there are
+any changed planes.
+
+We need the old state to validate, but we don't actually need the new
+state here.
+
+[How]
+If the commit isn't a full update then the use after free can be
+resolved by simply discarding the new state entirely and retaining
+the existing one instead.
+
+With this change the sequence above can be reexamined. Commit #2 will
+still free Commit #1's reference, but before this happens we actually
+added an additional reference as part of Commit #2.
+
+If an update comes in during this that needs to change the dc_state
+it will need to wait on Commit #1 and Commit #2 to finish. Then it'll
+swap the state, finish the work in commit tail and drop the last
+reference on Commit #2's dc_state.
+
+Bugzilla: https://bugzilla.kernel.org/show_bug.cgi?id=204181
+Fixes: 004b3938e637 ("drm/amd/display: Check scaling info when determing update type")
+
+Signed-off-by: Nicholas Kazlauskas <nicholas.kazlauskas@amd.com>
+Acked-by: Alex Deucher <alexander.deucher@amd.com>
+Reviewed-by: David Francis <david.francis@amd.com>
+Signed-off-by: Alex Deucher <alexander.deucher@amd.com>
+Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+
+---
+ drivers/gpu/drm/amd/display/amdgpu_dm/amdgpu_dm.c |   23 ++++++++++++++++++++++
+ 1 file changed, 23 insertions(+)
+
+--- a/drivers/gpu/drm/amd/display/amdgpu_dm/amdgpu_dm.c
++++ b/drivers/gpu/drm/amd/display/amdgpu_dm/amdgpu_dm.c
+@@ -7346,6 +7346,29 @@ static int amdgpu_dm_atomic_check(struct
+ 			ret = -EINVAL;
+ 			goto fail;
+ 		}
++	} else {
++		/*
++		 * The commit is a fast update. Fast updates shouldn't change
++		 * the DC context, affect global validation, and can have their
++		 * commit work done in parallel with other commits not touching
++		 * the same resource. If we have a new DC context as part of
++		 * the DM atomic state from validation we need to free it and
++		 * retain the existing one instead.
++		 */
++		struct dm_atomic_state *new_dm_state, *old_dm_state;
++
++		new_dm_state = dm_atomic_get_new_state(state);
++		old_dm_state = dm_atomic_get_old_state(state);
++
++		if (new_dm_state && old_dm_state) {
++			if (new_dm_state->context)
++				dc_release_state(new_dm_state->context);
++
++			new_dm_state->context = old_dm_state->context;
++
++			if (old_dm_state->context)
++				dc_retain_state(old_dm_state->context);
++		}
+ 	}
+ 
+ 	/* Must be success */
+From 0f0727d971f6fdf8f1077180d495ddb9928f0c8b Mon Sep 17 00:00:00 2001
+From: Nick Desaulniers <ndesaulniers@google.com>
+Date: Mon, 22 Jul 2019 15:31:05 -0700
+Subject: drm/amd/display: readd -msse2 to prevent Clang from emitting libcalls to undefined SW FP routines
+
+From: Nick Desaulniers <ndesaulniers@google.com>
+
+commit 0f0727d971f6fdf8f1077180d495ddb9928f0c8b upstream.
+
+arch/x86/Makefile disables SSE and SSE2 for the whole kernel.  The
+AMDGPU drivers modified in this patch re-enable SSE but not SSE2.  Turn
+on SSE2 to support emitting double precision floating point instructions
+rather than calls to non-existent (usually available from gcc_s or
+compiler_rt) floating point helper routines for Clang.
+
+This was originally landed in:
+commit 10117450735c ("drm/amd/display: add -msse2 to prevent Clang from emitting libcalls to undefined SW FP routines")
+but reverted in:
+commit 193392ed9f69 ("Revert "drm/amd/display: add -msse2 to prevent Clang from emitting libcalls to undefined SW FP routines"")
+due to bugreports from GCC builds. Add guards to only do so for Clang.
+
+Link: https://bugs.freedesktop.org/show_bug.cgi?id=109487
+Link: https://github.com/ClangBuiltLinux/linux/issues/327
+
+Suggested-by: Sedat Dilek <sedat.dilek@gmail.com>
+Suggested-by: Sami Tolvanen <samitolvanen@google.com>
+Signed-off-by: Nick Desaulniers <ndesaulniers@google.com>
+Signed-off-by: Alex Deucher <alexander.deucher@amd.com>
+Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+
+---
+ drivers/gpu/drm/amd/display/dc/calcs/Makefile |    4 ++++
+ drivers/gpu/drm/amd/display/dc/dcn20/Makefile |    4 ++++
+ drivers/gpu/drm/amd/display/dc/dml/Makefile   |    4 ++++
+ drivers/gpu/drm/amd/display/dc/dsc/Makefile   |    4 ++++
+ 4 files changed, 16 insertions(+)
+
+--- a/drivers/gpu/drm/amd/display/dc/calcs/Makefile
++++ b/drivers/gpu/drm/amd/display/dc/calcs/Makefile
+@@ -32,6 +32,10 @@ endif
+ 
+ calcs_ccflags := -mhard-float -msse $(cc_stack_align)
+ 
++ifdef CONFIG_CC_IS_CLANG
++calcs_ccflags += -msse2
++endif
++
+ CFLAGS_dcn_calcs.o := $(calcs_ccflags)
+ CFLAGS_dcn_calc_auto.o := $(calcs_ccflags)
+ CFLAGS_dcn_calc_math.o := $(calcs_ccflags) -Wno-tautological-compare
+--- a/drivers/gpu/drm/amd/display/dc/dcn20/Makefile
++++ b/drivers/gpu/drm/amd/display/dc/dcn20/Makefile
+@@ -18,6 +18,10 @@ endif
+ 
+ CFLAGS_dcn20_resource.o := -mhard-float -msse $(cc_stack_align)
+ 
++ifdef CONFIG_CC_IS_CLANG
++CFLAGS_dcn20_resource.o += -msse2
++endif
++
+ AMD_DAL_DCN20 = $(addprefix $(AMDDALPATH)/dc/dcn20/,$(DCN20))
+ 
+ AMD_DISPLAY_FILES += $(AMD_DAL_DCN20)
+--- a/drivers/gpu/drm/amd/display/dc/dml/Makefile
++++ b/drivers/gpu/drm/amd/display/dc/dml/Makefile
+@@ -32,6 +32,10 @@ endif
+ 
+ dml_ccflags := -mhard-float -msse $(cc_stack_align)
+ 
++ifdef CONFIG_CC_IS_CLANG
++dml_ccflags += -msse2
++endif
++
+ CFLAGS_display_mode_lib.o := $(dml_ccflags)
+ 
+ ifdef CONFIG_DRM_AMD_DC_DCN2_0
+--- a/drivers/gpu/drm/amd/display/dc/dsc/Makefile
++++ b/drivers/gpu/drm/amd/display/dc/dsc/Makefile
+@@ -9,6 +9,10 @@ endif
+ 
+ dsc_ccflags := -mhard-float -msse $(cc_stack_align)
+ 
++ifdef CONFIG_CC_IS_CLANG
++dsc_ccflags += -msse2
++endif
++
+ CFLAGS_rc_calc.o := $(dsc_ccflags)
+ CFLAGS_rc_calc_dpi.o := $(dsc_ccflags)
+ CFLAGS_codec_main_amd.o := $(dsc_ccflags)
+From 6ccb4ac2bf8a35c694ead92f8ac5530a16e8f2c8 Mon Sep 17 00:00:00 2001
+From: Greg Kurz <groug@kaod.org>
+Date: Wed, 11 Sep 2019 17:52:18 +0200
+Subject: powerpc/xive: Fix bogus error code returned by OPAL
+MIME-Version: 1.0
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8bit
+
+From: Greg Kurz <groug@kaod.org>
+
+commit 6ccb4ac2bf8a35c694ead92f8ac5530a16e8f2c8 upstream.
+
+There's a bug in skiboot that causes the OPAL_XIVE_ALLOCATE_IRQ call
+to return the 32-bit value 0xffffffff when OPAL has run out of IRQs.
+Unfortunatelty, OPAL return values are signed 64-bit entities and
+errors are supposed to be negative. If that happens, the linux code
+confusingly treats 0xffffffff as a valid IRQ number and panics at some
+point.
+
+A fix was recently merged in skiboot:
+
+e97391ae2bb5 ("xive: fix return value of opal_xive_allocate_irq()")
+
+but we need a workaround anyway to support older skiboots already
+in the field.
+
+Internally convert 0xffffffff to OPAL_RESOURCE which is the usual error
+returned upon resource exhaustion.
+
+Cc: stable@vger.kernel.org # v4.12+
+Signed-off-by: Greg Kurz <groug@kaod.org>
+Reviewed-by: Cédric Le Goater <clg@kaod.org>
+Signed-off-by: Michael Ellerman <mpe@ellerman.id.au>
+Link: https://lore.kernel.org/r/156821713818.1985334.14123187368108582810.stgit@bahia.lan
+Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+
+---
+ arch/powerpc/include/asm/opal.h            |    2 +-
+ arch/powerpc/platforms/powernv/opal-call.c |    2 +-
+ arch/powerpc/sysdev/xive/native.c          |   11 +++++++++++
+ 3 files changed, 13 insertions(+), 2 deletions(-)
+
+--- a/arch/powerpc/include/asm/opal.h
++++ b/arch/powerpc/include/asm/opal.h
+@@ -272,7 +272,7 @@ int64_t opal_xive_get_vp_info(uint64_t v
+ int64_t opal_xive_set_vp_info(uint64_t vp,
+ 			      uint64_t flags,
+ 			      uint64_t report_cl_pair);
+-int64_t opal_xive_allocate_irq(uint32_t chip_id);
++int64_t opal_xive_allocate_irq_raw(uint32_t chip_id);
+ int64_t opal_xive_free_irq(uint32_t girq);
+ int64_t opal_xive_sync(uint32_t type, uint32_t id);
+ int64_t opal_xive_dump(uint32_t type, uint32_t id);
+--- a/arch/powerpc/platforms/powernv/opal-call.c
++++ b/arch/powerpc/platforms/powernv/opal-call.c
+@@ -257,7 +257,7 @@ OPAL_CALL(opal_xive_set_queue_info,		OPA
+ OPAL_CALL(opal_xive_donate_page,		OPAL_XIVE_DONATE_PAGE);
+ OPAL_CALL(opal_xive_alloc_vp_block,		OPAL_XIVE_ALLOCATE_VP_BLOCK);
+ OPAL_CALL(opal_xive_free_vp_block,		OPAL_XIVE_FREE_VP_BLOCK);
+-OPAL_CALL(opal_xive_allocate_irq,		OPAL_XIVE_ALLOCATE_IRQ);
++OPAL_CALL(opal_xive_allocate_irq_raw,		OPAL_XIVE_ALLOCATE_IRQ);
+ OPAL_CALL(opal_xive_free_irq,			OPAL_XIVE_FREE_IRQ);
+ OPAL_CALL(opal_xive_get_vp_info,		OPAL_XIVE_GET_VP_INFO);
+ OPAL_CALL(opal_xive_set_vp_info,		OPAL_XIVE_SET_VP_INFO);
+--- a/arch/powerpc/sysdev/xive/native.c
++++ b/arch/powerpc/sysdev/xive/native.c
+@@ -231,6 +231,17 @@ static bool xive_native_match(struct dev
+ 	return of_device_is_compatible(node, "ibm,opal-xive-vc");
+ }
+ 
++static s64 opal_xive_allocate_irq(u32 chip_id)
++{
++	s64 irq = opal_xive_allocate_irq_raw(chip_id);
++
++	/*
++	 * Old versions of skiboot can incorrectly return 0xffffffff to
++	 * indicate no space, fix it up here.
++	 */
++	return irq == 0xffffffff ? OPAL_RESOURCE : irq;
++}
++
+ #ifdef CONFIG_SMP
+ static int xive_native_get_ipi(unsigned int cpu, struct xive_cpu *xc)
+ {
+From 98375b86c79137416e9fd354177b85e768c16e56 Mon Sep 17 00:00:00 2001
+From: Alan Stern <stern@rowland.harvard.edu>
+Date: Wed, 4 Sep 2019 11:54:20 -0400
+Subject: HID: prodikeys: Fix general protection fault during probe
+
+From: Alan Stern <stern@rowland.harvard.edu>
+
+commit 98375b86c79137416e9fd354177b85e768c16e56 upstream.
+
+The syzbot fuzzer provoked a general protection fault in the
+hid-prodikeys driver:
+
+kasan: CONFIG_KASAN_INLINE enabled
+kasan: GPF could be caused by NULL-ptr deref or user memory access
+general protection fault: 0000 [#1] SMP KASAN
+CPU: 0 PID: 12 Comm: kworker/0:1 Not tainted 5.3.0-rc5+ #28
+Hardware name: Google Google Compute Engine/Google Compute Engine, BIOS
+Google 01/01/2011
+Workqueue: usb_hub_wq hub_event
+RIP: 0010:pcmidi_submit_output_report drivers/hid/hid-prodikeys.c:300  [inline]
+RIP: 0010:pcmidi_set_operational drivers/hid/hid-prodikeys.c:558 [inline]
+RIP: 0010:pcmidi_snd_initialise drivers/hid/hid-prodikeys.c:686 [inline]
+RIP: 0010:pk_probe+0xb51/0xfd0 drivers/hid/hid-prodikeys.c:836
+Code: 0f 85 50 04 00 00 48 8b 04 24 4c 89 7d 10 48 8b 58 08 e8 b2 53 e4 fc
+48 8b 54 24 20 48 b8 00 00 00 00 00 fc ff df 48 c1 ea 03 <80> 3c 02 00 0f
+85 13 04 00 00 48 ba 00 00 00 00 00 fc ff df 49 8b
+
+The problem is caused by the fact that pcmidi_get_output_report() will
+return an error if the HID device doesn't provide the right sort of
+output report, but pcmidi_set_operational() doesn't bother to check
+the return code and assumes the function call always succeeds.
+
+This patch adds the missing check and aborts the probe operation if
+necessary.
+
+Reported-and-tested-by: syzbot+1088533649dafa1c9004@syzkaller.appspotmail.com
+Signed-off-by: Alan Stern <stern@rowland.harvard.edu>
+CC: <stable@vger.kernel.org>
+Signed-off-by: Jiri Kosina <jkosina@suse.cz>
+Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+
+---
+ drivers/hid/hid-prodikeys.c |   12 ++++++++++--
+ 1 file changed, 10 insertions(+), 2 deletions(-)
+
+--- a/drivers/hid/hid-prodikeys.c
++++ b/drivers/hid/hid-prodikeys.c
+@@ -551,10 +551,14 @@ static void pcmidi_setup_extra_keys(
+ 
+ static int pcmidi_set_operational(struct pcmidi_snd *pm)
+ {
++	int rc;
++
+ 	if (pm->ifnum != 1)
+ 		return 0; /* only set up ONCE for interace 1 */
+ 
+-	pcmidi_get_output_report(pm);
++	rc = pcmidi_get_output_report(pm);
++	if (rc < 0)
++		return rc;
+ 	pcmidi_submit_output_report(pm, 0xc1);
+ 	return 0;
+ }
+@@ -683,7 +687,11 @@ static int pcmidi_snd_initialise(struct
+ 	spin_lock_init(&pm->rawmidi_in_lock);
+ 
+ 	init_sustain_timers(pm);
+-	pcmidi_set_operational(pm);
++	err = pcmidi_set_operational(pm);
++	if (err < 0) {
++		pk_error("failed to find output report\n");
++		goto fail_register;
++	}
+ 
+ 	/* register it */
+ 	err = snd_card_register(card);
+From 2bcdacb70327013ca2066bfcf2af1009eff01f1d Mon Sep 17 00:00:00 2001
+From: Roderick Colenbrander <roderick.colenbrander@sony.com>
+Date: Wed, 4 Sep 2019 14:22:11 -0700
+Subject: HID: sony: Fix memory corruption issue on cleanup.
+
+From: Roderick Colenbrander <roderick.colenbrander@sony.com>
+
+commit 2bcdacb70327013ca2066bfcf2af1009eff01f1d upstream.
+
+The sony driver is not properly cleaning up from potential failures in
+sony_input_configured. Currently it calls hid_hw_stop, while hid_connect
+is still running. This is not a good idea, instead hid_hw_stop should
+be moved to sony_probe. Similar changes were recently made to Logitech
+drivers, which were also doing improper cleanup.
+
+Signed-off-by: Roderick Colenbrander <roderick.colenbrander@sony.com>
+CC: stable@vger.kernel.org
+Signed-off-by: Jiri Kosina <jkosina@suse.cz>
+Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+
+---
+ drivers/hid/hid-sony.c |    2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
+
+--- a/drivers/hid/hid-sony.c
++++ b/drivers/hid/hid-sony.c
+@@ -2811,7 +2811,6 @@ err_stop:
+ 	sony_cancel_work_sync(sc);
+ 	sony_remove_dev_list(sc);
+ 	sony_release_device_id(sc);
+-	hid_hw_stop(hdev);
+ 	return ret;
+ }
+ 
+@@ -2876,6 +2875,7 @@ static int sony_probe(struct hid_device
+ 	 */
+ 	if (!(hdev->claimed & HID_CLAIMED_INPUT)) {
+ 		hid_err(hdev, "failed to claim input\n");
++		hid_hw_stop(hdev);
+ 		return -ENODEV;
+ 	}
+ 
+From 5f9242775bb61f390f0885f23fc16397262c7538 Mon Sep 17 00:00:00 2001
+From: Alan Stern <stern@rowland.harvard.edu>
+Date: Tue, 20 Aug 2019 16:00:21 -0400
+Subject: HID: logitech: Fix general protection fault caused by Logitech driver
+
+From: Alan Stern <stern@rowland.harvard.edu>
+
+commit 5f9242775bb61f390f0885f23fc16397262c7538 upstream.
+
+The syzbot fuzzer found a general protection fault in the HID subsystem:
+
+kasan: CONFIG_KASAN_INLINE enabled
+kasan: GPF could be caused by NULL-ptr deref or user memory access
+general protection fault: 0000 [#1] SMP KASAN
+CPU: 0 PID: 3715 Comm: syz-executor.3 Not tainted 5.2.0-rc6+ #15
+Hardware name: Google Google Compute Engine/Google Compute Engine, BIOS
+Google 01/01/2011
+RIP: 0010:__pm_runtime_resume+0x49/0x180 drivers/base/power/runtime.c:1069
+Code: ed 74 d5 fe 45 85 ed 0f 85 9a 00 00 00 e8 6f 73 d5 fe 48 8d bd c1 02
+00 00 48 b8 00 00 00 00 00 fc ff df 48 89 fa 48 c1 ea 03 <0f> b6 04 02 48
+89 fa 83 e2 07 38 d0 7f 08 84 c0 0f 85 fe 00 00 00
+RSP: 0018:ffff8881d99d78e0 EFLAGS: 00010202
+RAX: dffffc0000000000 RBX: 0000000000000020 RCX: ffffc90003f3f000
+RDX: 0000000416d8686d RSI: ffffffff82676841 RDI: 00000020b6c3436a
+RBP: 00000020b6c340a9 R08: ffff8881c6d64800 R09: fffffbfff0e84c25
+R10: ffff8881d99d7940 R11: ffffffff87426127 R12: 0000000000000004
+R13: 0000000000000000 R14: ffff8881d9b94000 R15: ffffffff897f9048
+FS:  00007f047f542700(0000) GS:ffff8881db200000(0000) knlGS:0000000000000000
+CS:  0010 DS: 0000 ES: 0000 CR0: 0000000080050033
+CR2: 0000001b30f21000 CR3: 00000001ca032000 CR4: 00000000001406f0
+DR0: 0000000000000000 DR1: 0000000000000000 DR2: 0000000000000000
+DR3: 0000000000000000 DR6: 00000000fffe0ff0 DR7: 0000000000000400
+Call Trace:
+  pm_runtime_get_sync include/linux/pm_runtime.h:226 [inline]
+  usb_autopm_get_interface+0x1b/0x50 drivers/usb/core/driver.c:1707
+  usbhid_power+0x7c/0xe0 drivers/hid/usbhid/hid-core.c:1234
+  hid_hw_power include/linux/hid.h:1038 [inline]
+  hidraw_open+0x20d/0x740 drivers/hid/hidraw.c:282
+  chrdev_open+0x219/0x5c0 fs/char_dev.c:413
+  do_dentry_open+0x497/0x1040 fs/open.c:778
+  do_last fs/namei.c:3416 [inline]
+  path_openat+0x1430/0x3ff0 fs/namei.c:3533
+  do_filp_open+0x1a1/0x280 fs/namei.c:3563
+  do_sys_open+0x3c0/0x580 fs/open.c:1070
+  do_syscall_64+0xb7/0x560 arch/x86/entry/common.c:301
+  entry_SYSCALL_64_after_hwframe+0x49/0xbe
+
+It turns out the fault was caused by a bug in the HID Logitech driver,
+which violates the requirement that every pathway calling
+hid_hw_start() must also call hid_hw_stop().  This patch fixes the bug
+by making sure the requirement is met.
+
+Reported-and-tested-by: syzbot+3cbe5cd105d2ad56a1df@syzkaller.appspotmail.com
+Signed-off-by: Alan Stern <stern@rowland.harvard.edu>
+CC: <stable@vger.kernel.org>
+Signed-off-by: Jiri Kosina <jkosina@suse.cz>
+Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+
+---
+ drivers/hid/hid-lg.c    |   10 ++++++----
+ drivers/hid/hid-lg4ff.c |    1 -
+ 2 files changed, 6 insertions(+), 5 deletions(-)
+
+--- a/drivers/hid/hid-lg.c
++++ b/drivers/hid/hid-lg.c
+@@ -818,7 +818,7 @@ static int lg_probe(struct hid_device *h
+ 
+ 		if (!buf) {
+ 			ret = -ENOMEM;
+-			goto err_free;
++			goto err_stop;
+ 		}
+ 
+ 		ret = hid_hw_raw_request(hdev, buf[0], buf, sizeof(cbuf),
+@@ -850,9 +850,12 @@ static int lg_probe(struct hid_device *h
+ 		ret = lg4ff_init(hdev);
+ 
+ 	if (ret)
+-		goto err_free;
++		goto err_stop;
+ 
+ 	return 0;
++
++err_stop:
++	hid_hw_stop(hdev);
+ err_free:
+ 	kfree(drv_data);
+ 	return ret;
+@@ -863,8 +866,7 @@ static void lg_remove(struct hid_device
+ 	struct lg_drv_data *drv_data = hid_get_drvdata(hdev);
+ 	if (drv_data->quirks & LG_FF4)
+ 		lg4ff_deinit(hdev);
+-	else
+-		hid_hw_stop(hdev);
++	hid_hw_stop(hdev);
+ 	kfree(drv_data);
+ }
+ 
+--- a/drivers/hid/hid-lg4ff.c
++++ b/drivers/hid/hid-lg4ff.c
+@@ -1477,7 +1477,6 @@ int lg4ff_deinit(struct hid_device *hid)
+ 		}
+ 	}
+ #endif
+-	hid_hw_stop(hid);
+ 	drv_data->device_props = NULL;
+ 
+ 	kfree(entry);
+From 8ccff2843fb4e6d9d26e5ae9ffe9840b38b92638 Mon Sep 17 00:00:00 2001
+From: Hans de Goede <hdegoede@redhat.com>
+Date: Sun, 25 Aug 2019 17:35:42 +0200
+Subject: HID: logitech-dj: Fix crash when initial logi_dj_recv_query_paired_devices fails
+
+From: Hans de Goede <hdegoede@redhat.com>
+
+commit 8ccff2843fb4e6d9d26e5ae9ffe9840b38b92638 upstream.
+
+Before this commit dj_probe would exit with an error if the initial
+logi_dj_recv_query_paired_devices fails. The initial call may fail
+when the receiver is connected through a kvm and the focus is away.
+
+When the call fails this causes 2 problems:
+
+1) dj_probe calls logi_dj_recv_query_paired_devices after calling
+hid_device_io_start() so a HID report may have been received in between
+and our delayedwork_callback may be running. It seems that the initial
+logi_dj_recv_query_paired_devices failure happening with some KVMs triggers
+this exact scenario, causing the work-queue to run on free-ed memory,
+leading to:
+
+ BUG: unable to handle page fault for address: 0000000000001e88
+ #PF: supervisor read access in kernel mode
+ #PF: error_code(0x0000) - not-present page
+ PGD 0 P4D 0
+ Oops: 0000 [#1] SMP PTI
+ CPU: 3 PID: 257 Comm: kworker/3:3 Tainted: G           OE     5.3.0-rc5+ #100
+ Hardware name: To Be Filled By O.E.M. To Be Filled By O.E.M./B150M Pro4S/D3, BIOS P7.10 12/06/2016
+ Workqueue: events 0xffffffffc02ba200
+ RIP: 0010:0xffffffffc02ba1bd
+ Code: e8 e8 13 00 d8 48 89 c5 48 85 c0 74 4c 48 8b 7b 10 48 89 ea b9 07 00 00 00 41 b9 09 00 00 00 41 b8 01 00 00 00 be 10 00 00 00 <48> 8b 87 88 1e 00 00 48 8b 40 40 e8 b3 6b b4 d8 48 89 ef 41 89 c4
+ RSP: 0018:ffffb760c046bdb8 EFLAGS: 00010286
+ RAX: ffff935038ea4550 RBX: ffff935046778000 RCX: 0000000000000007
+ RDX: ffff935038ea4550 RSI: 0000000000000010 RDI: 0000000000000000
+ RBP: ffff935038ea4550 R08: 0000000000000001 R09: 0000000000000009
+ R10: 000000000000e011 R11: 0000000000000001 R12: ffff9350467780e8
+ R13: ffff935046778000 R14: 0000000000000000 R15: ffff935046778070
+ FS:  0000000000000000(0000) GS:ffff935054e00000(0000) knlGS:0000000000000000
+ CS:  0010 DS: 0000 ES: 0000 CR0: 0000000080050033
+ CR2: 0000000000001e88 CR3: 000000075a612002 CR4: 00000000003606e0
+ DR0: 0000000000000000 DR1: 0000000000000000 DR2: 0000000000000000
+ DR3: 0000000000000000 DR6: 00000000fffe0ff0 DR7: 0000000000000400
+ Call Trace:
+  0xffffffffc02ba2f7
+  ? process_one_work+0x1b1/0x560
+  process_one_work+0x234/0x560
+  worker_thread+0x50/0x3b0
+  kthread+0x10a/0x140
+  ? process_one_work+0x560/0x560
+  ? kthread_park+0x80/0x80
+  ret_from_fork+0x3a/0x50
+ Modules linked in: vboxpci(O) vboxnetadp(O) vboxnetflt(O) vboxdrv(O) bnep vfat fat btusb btrtl btbcm btintel bluetooth intel_rapl_msr ecdh_generic rfkill ecc snd_usb_audio snd_usbmidi_lib intel_rapl_common snd_rawmidi mc x86_pkg_temp_thermal intel_powerclamp coretemp iTCO_wdt iTCO_vendor_support mei_wdt mei_hdcp ppdev kvm_intel kvm irqbypass crct10dif_pclmul crc32_generic crc32_pclmul snd_hda_codec_hdmi snd_hda_codec_realtek snd_hda_codec_generic ledtrig_audio ghash_clmulni_intel intel_cstate snd_hda_intel snd_hda_codec intel_uncore snd_hda_core snd_hwdep intel_rapl_perf snd_seq snd_seq_device snd_pcm snd_timer intel_wmi_thunderbolt snd e1000e soundcore mxm_wmi i2c_i801 bfq mei_me mei intel_pch_thermal parport_pc parport acpi_pad binfmt_misc hid_lg_g15(E) hid_logitech_dj(E) i915 crc32c_intel i2c_algo_bit drm_kms_helper nvme nvme_core drm wmi video uas usb_storage i2c_dev
+ CR2: 0000000000001e88
+ ---[ end trace 1d3f8afdcfcbd842 ]---
+
+2) Even if we were to fix 1. by making sure the work is stopped before
+failing probe, failing probe is the wrong thing to do, we have
+logi_dj_recv_queue_unknown_work to deal with the initial
+logi_dj_recv_query_paired_devices failure.
+
+Rather then error-ing out of the probe, causing the receiver to not work at
+all we should rely on this, so that the attached devices will get properly
+enumerated once the KVM focus is switched back.
+
+Cc: stable@vger.kernel.org
+Fixes: 74808f9115ce ("HID: logitech-dj: add support for non unifying receivers")
+Signed-off-by: Hans de Goede <hdegoede@redhat.com>
+Signed-off-by: Benjamin Tissoires <benjamin.tissoires@redhat.com>
+Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+
+---
+ drivers/hid/hid-logitech-dj.c |   10 +++++-----
+ 1 file changed, 5 insertions(+), 5 deletions(-)
+
+--- a/drivers/hid/hid-logitech-dj.c
++++ b/drivers/hid/hid-logitech-dj.c
+@@ -1734,14 +1734,14 @@ static int logi_dj_probe(struct hid_devi
+ 		if (retval < 0) {
+ 			hid_err(hdev, "%s: logi_dj_recv_query_paired_devices error:%d\n",
+ 				__func__, retval);
+-			goto logi_dj_recv_query_paired_devices_failed;
++			/*
++			 * This can happen with a KVM, let the probe succeed,
++			 * logi_dj_recv_queue_unknown_work will retry later.
++			 */
+ 		}
+ 	}
+ 
+-	return retval;
+-
+-logi_dj_recv_query_paired_devices_failed:
+-	hid_hw_close(hdev);
++	return 0;
+ 
+ llopen_failed:
+ switch_to_dj_mode_fail:
+From 416dacb819f59180e4d86a5550052033ebb6d72c Mon Sep 17 00:00:00 2001
+From: Alan Stern <stern@rowland.harvard.edu>
+Date: Wed, 21 Aug 2019 13:27:12 -0400
+Subject: HID: hidraw: Fix invalid read in hidraw_ioctl
+
+From: Alan Stern <stern@rowland.harvard.edu>
+
+commit 416dacb819f59180e4d86a5550052033ebb6d72c upstream.
+
+The syzbot fuzzer has reported a pair of problems in the
+hidraw_ioctl() function: slab-out-of-bounds read and use-after-free
+read.  An example of the first:
+
+BUG: KASAN: slab-out-of-bounds in strlen+0x79/0x90 lib/string.c:525
+Read of size 1 at addr ffff8881c8035f38 by task syz-executor.4/2833
+
+CPU: 1 PID: 2833 Comm: syz-executor.4 Not tainted 5.3.0-rc2+ #1
+Hardware name: Google Google Compute Engine/Google Compute Engine, BIOS
+Google 01/01/2011
+Call Trace:
+  __dump_stack lib/dump_stack.c:77 [inline]
+  dump_stack+0xca/0x13e lib/dump_stack.c:113
+  print_address_description+0x6a/0x32c mm/kasan/report.c:351
+  __kasan_report.cold+0x1a/0x33 mm/kasan/report.c:482
+  kasan_report+0xe/0x12 mm/kasan/common.c:612
+  strlen+0x79/0x90 lib/string.c:525
+  strlen include/linux/string.h:281 [inline]
+  hidraw_ioctl+0x245/0xae0 drivers/hid/hidraw.c:446
+  vfs_ioctl fs/ioctl.c:46 [inline]
+  file_ioctl fs/ioctl.c:509 [inline]
+  do_vfs_ioctl+0xd2d/0x1330 fs/ioctl.c:696
+  ksys_ioctl+0x9b/0xc0 fs/ioctl.c:713
+  __do_sys_ioctl fs/ioctl.c:720 [inline]
+  __se_sys_ioctl fs/ioctl.c:718 [inline]
+  __x64_sys_ioctl+0x6f/0xb0 fs/ioctl.c:718
+  do_syscall_64+0xb7/0x580 arch/x86/entry/common.c:296
+  entry_SYSCALL_64_after_hwframe+0x49/0xbe
+RIP: 0033:0x459829
+Code: fd b7 fb ff c3 66 2e 0f 1f 84 00 00 00 00 00 66 90 48 89 f8 48 89 f7
+48 89 d6 48 89 ca 4d 89 c2 4d 89 c8 4c 8b 4c 24 08 0f 05 <48> 3d 01 f0 ff
+ff 0f 83 cb b7 fb ff c3 66 2e 0f 1f 84 00 00 00 00
+RSP: 002b:00007f7a68f6dc78 EFLAGS: 00000246 ORIG_RAX: 0000000000000010
+RAX: ffffffffffffffda RBX: 0000000000000003 RCX: 0000000000459829
+RDX: 0000000000000000 RSI: 0000000080404805 RDI: 0000000000000004
+RBP: 000000000075bf20 R08: 0000000000000000 R09: 0000000000000000
+R10: 0000000000000000 R11: 0000000000000246 R12: 00007f7a68f6e6d4
+R13: 00000000004c21de R14: 00000000004d5620 R15: 00000000ffffffff
+
+The two problems have the same cause: hidraw_ioctl() fails to test
+whether the device has been removed.  This patch adds the missing test.
+
+Reported-and-tested-by: syzbot+5a6c4ec678a0c6ee84ba@syzkaller.appspotmail.com
+Signed-off-by: Alan Stern <stern@rowland.harvard.edu>
+CC: <stable@vger.kernel.org>
+Signed-off-by: Jiri Kosina <jkosina@suse.cz>
+Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+
+---
+ drivers/hid/hidraw.c |    2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
+
+--- a/drivers/hid/hidraw.c
++++ b/drivers/hid/hidraw.c
+@@ -370,7 +370,7 @@ static long hidraw_ioctl(struct file *fi
+ 
+ 	mutex_lock(&minors_lock);
+ 	dev = hidraw_table[minor];
+-	if (!dev) {
++	if (!dev || !dev->exist) {
+ 		ret = -ENODEV;
+ 		goto out;
+ 	}
+From 2acf40f0454d41b8d51c95d317283c20c931164d Mon Sep 17 00:00:00 2001
+From: Sebastian Parschauer <s.parschauer@gmx.de>
+Date: Mon, 2 Sep 2019 12:39:30 +0200
+Subject: HID: Add quirk for HP X500 PIXART OEM mouse
+
+From: Sebastian Parschauer <s.parschauer@gmx.de>
+
+commit 2acf40f0454d41b8d51c95d317283c20c931164d upstream.
+
+The PixArt OEM mice are known for disconnecting every minute in
+runlevel 1 or 3 if they are not always polled. So add quirk
+ALWAYS_POLL for this one as well.
+
+Ville Viinikka (viinikv) reported and tested the quirk.
+Link: https://github.com/sriemer/fix-linux-mouse issue 15
+
+Signed-off-by: Sebastian Parschauer <s.parschauer@gmx.de>
+CC: stable@vger.kernel.org # v4.16+
+Signed-off-by: Benjamin Tissoires <benjamin.tissoires@redhat.com>
+Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+
+---
+ drivers/hid/hid-ids.h    |    1 +
+ drivers/hid/hid-quirks.c |    1 +
+ 2 files changed, 2 insertions(+)
+
+--- a/drivers/hid/hid-ids.h
++++ b/drivers/hid/hid-ids.h
+@@ -568,6 +568,7 @@
+ #define USB_PRODUCT_ID_HP_LOGITECH_OEM_USB_OPTICAL_MOUSE_0B4A	0x0b4a
+ #define USB_PRODUCT_ID_HP_PIXART_OEM_USB_OPTICAL_MOUSE		0x134a
+ #define USB_PRODUCT_ID_HP_PIXART_OEM_USB_OPTICAL_MOUSE_094A	0x094a
++#define USB_PRODUCT_ID_HP_PIXART_OEM_USB_OPTICAL_MOUSE_0941	0x0941
+ #define USB_PRODUCT_ID_HP_PIXART_OEM_USB_OPTICAL_MOUSE_0641	0x0641
+ 
+ #define USB_VENDOR_ID_HUION		0x256c
+--- a/drivers/hid/hid-quirks.c
++++ b/drivers/hid/hid-quirks.c
+@@ -92,6 +92,7 @@ static const struct hid_device_id hid_qu
+ 	{ HID_USB_DEVICE(USB_VENDOR_ID_HP, USB_PRODUCT_ID_HP_LOGITECH_OEM_USB_OPTICAL_MOUSE_0B4A), HID_QUIRK_ALWAYS_POLL },
+ 	{ HID_USB_DEVICE(USB_VENDOR_ID_HP, USB_PRODUCT_ID_HP_PIXART_OEM_USB_OPTICAL_MOUSE), HID_QUIRK_ALWAYS_POLL },
+ 	{ HID_USB_DEVICE(USB_VENDOR_ID_HP, USB_PRODUCT_ID_HP_PIXART_OEM_USB_OPTICAL_MOUSE_094A), HID_QUIRK_ALWAYS_POLL },
++	{ HID_USB_DEVICE(USB_VENDOR_ID_HP, USB_PRODUCT_ID_HP_PIXART_OEM_USB_OPTICAL_MOUSE_0941), HID_QUIRK_ALWAYS_POLL },
+ 	{ HID_USB_DEVICE(USB_VENDOR_ID_HP, USB_PRODUCT_ID_HP_PIXART_OEM_USB_OPTICAL_MOUSE_0641), HID_QUIRK_ALWAYS_POLL },
+ 	{ HID_USB_DEVICE(USB_VENDOR_ID_IDEACOM, USB_DEVICE_ID_IDEACOM_IDC6680), HID_QUIRK_MULTI_INPUT },
+ 	{ HID_USB_DEVICE(USB_VENDOR_ID_INNOMEDIA, USB_DEVICE_ID_INNEX_GENESIS_ATARI), HID_QUIRK_MULTI_INPUT },
+From 37c673ade35c707d50583b5b25091ff8ebdeafd7 Mon Sep 17 00:00:00 2001
+From: Tokunori Ikegami <ikegami.t@gmail.com>
+Date: Tue, 6 Aug 2019 04:03:18 +0900
+Subject: mtd: cfi_cmdset_0002: Use chip_good() to retry in do_write_oneword()
+
+From: Tokunori Ikegami <ikegami.t@gmail.com>
+
+commit 37c673ade35c707d50583b5b25091ff8ebdeafd7 upstream.
+
+As reported by the OpenWRT team, write requests sometimes fail on some
+platforms.
+Currently to check the state chip_ready() is used correctly as described by
+the flash memory S29GL256P11TFI01 datasheet.
+Also chip_good() is used to check if the write is succeeded and it was
+implemented by the commit fb4a90bfcd6d8 ("[MTD] CFI-0002 - Improve error
+checking").
+But actually the write failure is caused on some platforms and also it can
+be fixed by using chip_good() to check the state and retry instead.
+Also it seems that it is caused after repeated about 1,000 times to retry
+the write one word with the reset command.
+By using chip_good() to check the state to be done it can be reduced the
+retry with reset.
+It is depended on the actual flash chip behavior so the root cause is
+unknown.
+
+Cc: Chris Packham <chris.packham@alliedtelesis.co.nz>
+Cc: Joakim Tjernlund <Joakim.Tjernlund@infinera.com>
+Cc: linux-mtd@lists.infradead.org
+Cc: stable@vger.kernel.org
+Reported-by: Fabio Bettoni <fbettoni@gmail.com>
+Signed-off-by: Felix Fietkau <nbd@nbd.name>
+Signed-off-by: Hauke Mehrtens <hauke@hauke-m.de>
+Signed-off-by: Tokunori Ikegami <ikegami.t@gmail.com>
+[vigneshr@ti.com: Fix a checkpatch warning]
+Signed-off-by: Vignesh Raghavendra <vigneshr@ti.com>
+Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+
+---
+ drivers/mtd/chips/cfi_cmdset_0002.c |   18 ++++++++++++------
+ 1 file changed, 12 insertions(+), 6 deletions(-)
+
+--- a/drivers/mtd/chips/cfi_cmdset_0002.c
++++ b/drivers/mtd/chips/cfi_cmdset_0002.c
+@@ -1717,31 +1717,37 @@ static int __xipram do_write_oneword(str
+ 			continue;
+ 		}
+ 
++		/*
++		 * We check "time_after" and "!chip_good" before checking
++		 * "chip_good" to avoid the failure due to scheduling.
++		 */
+ 		if (time_after(jiffies, timeo) &&
+-		    !chip_ready(map, chip, adr)) {
++		    !chip_good(map, chip, adr, datum)) {
+ 			xip_enable(map, chip, adr);
+ 			printk(KERN_WARNING "MTD %s(): software timeout\n", __func__);
+ 			xip_disable(map, chip, adr);
++			ret = -EIO;
+ 			break;
+ 		}
+ 
+-		if (chip_ready(map, chip, adr))
++		if (chip_good(map, chip, adr, datum))
+ 			break;
+ 
+ 		/* Latency issues. Drop the lock, wait a while and retry */
+ 		UDELAY(map, chip, adr, 1);
+ 	}
++
+ 	/* Did we succeed? */
+-	if (!chip_good(map, chip, adr, datum)) {
++	if (ret) {
+ 		/* reset on all failures. */
+ 		cfi_check_err_status(map, chip, adr);
+ 		map_write(map, CMD(0xF0), chip->start);
+ 		/* FIXME - should have reset delay before continuing */
+ 
+-		if (++retry_cnt <= MAX_RETRIES)
++		if (++retry_cnt <= MAX_RETRIES) {
++			ret = 0;
+ 			goto retry;
+-
+-		ret = -EIO;
++		}
+ 	}
+ 	xip_enable(map, chip, adr);
+  op_done:
+From 5fc194ea6d34dfad9833d3043ce41d6c52aff39a Mon Sep 17 00:00:00 2001
+From: "Gustavo A. R. Silva" <gustavo@embeddedor.com>
+Date: Mon, 9 Sep 2019 00:29:52 -0500
+Subject: crypto: talitos - fix missing break in switch statement
+
+From: Gustavo A. R. Silva <gustavo@embeddedor.com>
+
+commit 5fc194ea6d34dfad9833d3043ce41d6c52aff39a upstream.
+
+Add missing break statement in order to prevent the code from falling
+through to case CRYPTO_ALG_TYPE_AHASH.
+
+Fixes: aeb4c132f33d ("crypto: talitos - Convert to new AEAD interface")
+Cc: stable@vger.kernel.org
+Reported-by: kbuild test robot <lkp@intel.com>
+Signed-off-by: Gustavo A. R. Silva <gustavo@embeddedor.com>
+Reviewed-by: Christophe Leroy <christophe.leroy@c-s.fr>
+Signed-off-by: Herbert Xu <herbert@gondor.apana.org.au>
+Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+
+---
+ drivers/crypto/talitos.c |    1 +
+ 1 file changed, 1 insertion(+)
+
+--- a/drivers/crypto/talitos.c
++++ b/drivers/crypto/talitos.c
+@@ -3140,6 +3140,7 @@ static int talitos_remove(struct platfor
+ 			break;
+ 		case CRYPTO_ALG_TYPE_AEAD:
+ 			crypto_unregister_aead(&t_alg->algt.alg.aead);
++			break;
+ 		case CRYPTO_ALG_TYPE_AHASH:
+ 			crypto_unregister_ahash(&t_alg->algt.alg.hash);
+ 			break;
+From 053a4ffe298836bb973d2cba59f82fff60c7db5b Mon Sep 17 00:00:00 2001
+From: Peng Fan <peng.fan@nxp.com>
+Date: Mon, 15 Jul 2019 02:55:43 +0000
+Subject: clk: imx: imx8mm: fix audio pll setting
+
+From: Peng Fan <peng.fan@nxp.com>
+
+commit 053a4ffe298836bb973d2cba59f82fff60c7db5b upstream.
+
+The AUDIO PLL max support 650M, so the original clk settings violate
+spec. This patch makes the output 786432000 -> 393216000,
+and 722534400 -> 361267200 to aligned with NXP vendor kernel without any
+impact on audio functionality and go within 650MHz PLL limit.
+
+Cc: <stable@vger.kernel.org>
+Fixes: ba5625c3e272 ("clk: imx: Add clock driver support for imx8mm")
+Signed-off-by: Peng Fan <peng.fan@nxp.com>
+Acked-by: Abel Vesa <abel.vesa@nxp.com>
+Signed-off-by: Shawn Guo <shawnguo@kernel.org>
+Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+
+---
+ drivers/clk/imx/clk-imx8mm.c |    4 ++--
+ 1 file changed, 2 insertions(+), 2 deletions(-)
+
+--- a/drivers/clk/imx/clk-imx8mm.c
++++ b/drivers/clk/imx/clk-imx8mm.c
+@@ -55,8 +55,8 @@ static const struct imx_pll14xx_rate_tab
+ };
+ 
+ static const struct imx_pll14xx_rate_table imx8mm_audiopll_tbl[] = {
+-	PLL_1443X_RATE(786432000U, 655, 5, 2, 23593),
+-	PLL_1443X_RATE(722534400U, 301, 5, 1, 3670),
++	PLL_1443X_RATE(393216000U, 262, 2, 3, 9437),
++	PLL_1443X_RATE(361267200U, 361, 3, 3, 17511),
+ };
+ 
+ static const struct imx_pll14xx_rate_table imx8mm_videopll_tbl[] = {
+From 6e73fd25e2c7510b7dfadbaf701f31d4bff9c75b Mon Sep 17 00:00:00 2001
+From: Vitaly Wool <vitalywool@gmail.com>
+Date: Mon, 23 Sep 2019 15:32:56 -0700
+Subject: Revert "mm/z3fold.c: fix race between migration and destruction"
+MIME-Version: 1.0
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8bit
+
+From: Vitaly Wool <vitalywool@gmail.com>
+
+commit 6e73fd25e2c7510b7dfadbaf701f31d4bff9c75b upstream.
+
+With the original commit applied, z3fold_zpool_destroy() may get blocked
+on wait_event() for indefinite time.  Revert this commit for the time
+being to get rid of this problem since the issue the original commit
+addresses is less severe.
+
+Link: http://lkml.kernel.org/r/20190910123142.7a9c8d2de4d0acbc0977c602@gmail.com
+Fixes: d776aaa9895eb6eb77 ("mm/z3fold.c: fix race between migration and destruction")
+Reported-by: Agustín Dall'Alba <agustin@dallalba.com.ar>
+Signed-off-by: Vitaly Wool <vitalywool@gmail.com>
+Cc: Vlastimil Babka <vbabka@suse.cz>
+Cc: Vitaly Wool <vitalywool@gmail.com>
+Cc: Shakeel Butt <shakeelb@google.com>
+Cc: Jonathan Adams <jwadams@google.com>
+Cc: Henry Burns <henrywolfeburns@gmail.com>
+Cc: <stable@vger.kernel.org>
+Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
+Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
+Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+
+---
+ mm/z3fold.c |   90 ------------------------------------------------------------
+ 1 file changed, 90 deletions(-)
+
+--- a/mm/z3fold.c
++++ b/mm/z3fold.c
+@@ -41,7 +41,6 @@
+ #include <linux/workqueue.h>
+ #include <linux/slab.h>
+ #include <linux/spinlock.h>
+-#include <linux/wait.h>
+ #include <linux/zpool.h>
+ #include <linux/magic.h>
+ 
+@@ -146,8 +145,6 @@ struct z3fold_header {
+  * @release_wq:	workqueue for safe page release
+  * @work:	work_struct for safe page release
+  * @inode:	inode for z3fold pseudo filesystem
+- * @destroying: bool to stop migration once we start destruction
+- * @isolated: int to count the number of pages currently in isolation
+  *
+  * This structure is allocated at pool creation time and maintains metadata
+  * pertaining to a particular z3fold pool.
+@@ -166,11 +163,8 @@ struct z3fold_pool {
+ 	const struct zpool_ops *zpool_ops;
+ 	struct workqueue_struct *compact_wq;
+ 	struct workqueue_struct *release_wq;
+-	struct wait_queue_head isolate_wait;
+ 	struct work_struct work;
+ 	struct inode *inode;
+-	bool destroying;
+-	int isolated;
+ };
+ 
+ /*
+@@ -775,7 +769,6 @@ static struct z3fold_pool *z3fold_create
+ 		goto out_c;
+ 	spin_lock_init(&pool->lock);
+ 	spin_lock_init(&pool->stale_lock);
+-	init_waitqueue_head(&pool->isolate_wait);
+ 	pool->unbuddied = __alloc_percpu(sizeof(struct list_head)*NCHUNKS, 2);
+ 	if (!pool->unbuddied)
+ 		goto out_pool;
+@@ -815,15 +808,6 @@ out:
+ 	return NULL;
+ }
+ 
+-static bool pool_isolated_are_drained(struct z3fold_pool *pool)
+-{
+-	bool ret;
+-
+-	spin_lock(&pool->lock);
+-	ret = pool->isolated == 0;
+-	spin_unlock(&pool->lock);
+-	return ret;
+-}
+ /**
+  * z3fold_destroy_pool() - destroys an existing z3fold pool
+  * @pool:	the z3fold pool to be destroyed
+@@ -833,22 +817,6 @@ static bool pool_isolated_are_drained(st
+ static void z3fold_destroy_pool(struct z3fold_pool *pool)
+ {
+ 	kmem_cache_destroy(pool->c_handle);
+-	/*
+-	 * We set pool-> destroying under lock to ensure that
+-	 * z3fold_page_isolate() sees any changes to destroying. This way we
+-	 * avoid the need for any memory barriers.
+-	 */
+-
+-	spin_lock(&pool->lock);
+-	pool->destroying = true;
+-	spin_unlock(&pool->lock);
+-
+-	/*
+-	 * We need to ensure that no pages are being migrated while we destroy
+-	 * these workqueues, as migration can queue work on either of the
+-	 * workqueues.
+-	 */
+-	wait_event(pool->isolate_wait, !pool_isolated_are_drained(pool));
+ 
+ 	/*
+ 	 * We need to destroy pool->compact_wq before pool->release_wq,
+@@ -1339,28 +1307,6 @@ static u64 z3fold_get_pool_size(struct z
+ 	return atomic64_read(&pool->pages_nr);
+ }
+ 
+-/*
+- * z3fold_dec_isolated() expects to be called while pool->lock is held.
+- */
+-static void z3fold_dec_isolated(struct z3fold_pool *pool)
+-{
+-	assert_spin_locked(&pool->lock);
+-	VM_BUG_ON(pool->isolated <= 0);
+-	pool->isolated--;
+-
+-	/*
+-	 * If we have no more isolated pages, we have to see if
+-	 * z3fold_destroy_pool() is waiting for a signal.
+-	 */
+-	if (pool->isolated == 0 && waitqueue_active(&pool->isolate_wait))
+-		wake_up_all(&pool->isolate_wait);
+-}
+-
+-static void z3fold_inc_isolated(struct z3fold_pool *pool)
+-{
+-	pool->isolated++;
+-}
+-
+ static bool z3fold_page_isolate(struct page *page, isolate_mode_t mode)
+ {
+ 	struct z3fold_header *zhdr;
+@@ -1387,34 +1333,6 @@ static bool z3fold_page_isolate(struct p
+ 		spin_lock(&pool->lock);
+ 		if (!list_empty(&page->lru))
+ 			list_del(&page->lru);
+-		/*
+-		 * We need to check for destruction while holding pool->lock, as
+-		 * otherwise destruction could see 0 isolated pages, and
+-		 * proceed.
+-		 */
+-		if (unlikely(pool->destroying)) {
+-			spin_unlock(&pool->lock);
+-			/*
+-			 * If this page isn't stale, somebody else holds a
+-			 * reference to it. Let't drop our refcount so that they
+-			 * can call the release logic.
+-			 */
+-			if (unlikely(kref_put(&zhdr->refcount,
+-					      release_z3fold_page_locked))) {
+-				/*
+-				 * If we get here we have kref problems, so we
+-				 * should freak out.
+-				 */
+-				WARN(1, "Z3fold is experiencing kref problems\n");
+-				z3fold_page_unlock(zhdr);
+-				return false;
+-			}
+-			z3fold_page_unlock(zhdr);
+-			return false;
+-		}
+-
+-
+-		z3fold_inc_isolated(pool);
+ 		spin_unlock(&pool->lock);
+ 		z3fold_page_unlock(zhdr);
+ 		return true;
+@@ -1483,10 +1401,6 @@ static int z3fold_page_migrate(struct ad
+ 
+ 	queue_work_on(new_zhdr->cpu, pool->compact_wq, &new_zhdr->work);
+ 
+-	spin_lock(&pool->lock);
+-	z3fold_dec_isolated(pool);
+-	spin_unlock(&pool->lock);
+-
+ 	page_mapcount_reset(page);
+ 	put_page(page);
+ 	return 0;
+@@ -1506,14 +1420,10 @@ static void z3fold_page_putback(struct p
+ 	INIT_LIST_HEAD(&page->lru);
+ 	if (kref_put(&zhdr->refcount, release_z3fold_page_locked)) {
+ 		atomic64_dec(&pool->pages_nr);
+-		spin_lock(&pool->lock);
+-		z3fold_dec_isolated(pool);
+-		spin_unlock(&pool->lock);
+ 		return;
+ 	}
+ 	spin_lock(&pool->lock);
+ 	list_add(&page->lru, &pool->lru);
+-	z3fold_dec_isolated(pool);
+ 	spin_unlock(&pool->lock);
+ 	z3fold_page_unlock(zhdr);
+ }
+From 029d2c0fd61eac74700fb4ffff36fc63bfff7e5e Mon Sep 17 00:00:00 2001
+From: Ilya Pshonkin <sudokamikaze@protonmail.com>
+Date: Tue, 17 Sep 2019 10:49:34 +0300
+Subject: ALSA: usb-audio: Add Hiby device family to quirks for native DSD support
+
+From: Ilya Pshonkin <sudokamikaze@protonmail.com>
+
+commit 029d2c0fd61eac74700fb4ffff36fc63bfff7e5e upstream.
+
+This patch adds quirk VID ID for Hiby portable players family with
+native DSD playback support.
+
+Signed-off-by: Ilya Pshonkin <sudokamikaze@protonmail.com>
+Cc: <stable@vger.kernel.org>
+Link: https://lore.kernel.org/r/20190917074937.157802-1-ilya.pshonkin@netforce.ua
+Signed-off-by: Takashi Iwai <tiwai@suse.de>
+Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+
+---
+ sound/usb/quirks.c |    1 +
+ 1 file changed, 1 insertion(+)
+
+--- a/sound/usb/quirks.c
++++ b/sound/usb/quirks.c
+@@ -1655,6 +1655,7 @@ u64 snd_usb_interface_dsd_format_quirks(
+ 	case 0x152a:  /* Thesycon devices */
+ 	case 0x25ce:  /* Mytek devices */
+ 	case 0x2ab6:  /* T+A devices */
++	case 0xc502:  /* HiBy devices */
+ 		if (fp->dsd_raw)
+ 			return SNDRV_PCM_FMTBIT_DSD_U32_BE;
+ 		break;
+From f41f900568d9ffd896cc941db7021eb14bd55910 Mon Sep 17 00:00:00 2001
+From: Jussi Laako <jussi@sonarnerd.net>
+Date: Tue, 24 Sep 2019 10:11:43 +0300
+Subject: ALSA: usb-audio: Add DSD support for EVGA NU Audio
+
+From: Jussi Laako <jussi@sonarnerd.net>
+
+commit f41f900568d9ffd896cc941db7021eb14bd55910 upstream.
+
+EVGA NU Audio is actually a USB audio device on a PCIexpress card,
+with it's own USB controller. It supports both PCM and DSD.
+
+Signed-off-by: Jussi Laako <jussi@sonarnerd.net>
+Cc: <stable@vger.kernel.org>
+Link: https://lore.kernel.org/r/20190924071143.30911-1-jussi@sonarnerd.net
+Signed-off-by: Takashi Iwai <tiwai@suse.de>
+Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+
+---
+ sound/usb/quirks.c |    1 +
+ 1 file changed, 1 insertion(+)
+
+--- a/sound/usb/quirks.c
++++ b/sound/usb/quirks.c
+@@ -1655,6 +1655,7 @@ u64 snd_usb_interface_dsd_format_quirks(
+ 	case 0x152a:  /* Thesycon devices */
+ 	case 0x25ce:  /* Mytek devices */
+ 	case 0x2ab6:  /* T+A devices */
++	case 0x3842:  /* EVGA */
+ 	case 0xc502:  /* HiBy devices */
+ 		if (fp->dsd_raw)
+ 			return SNDRV_PCM_FMTBIT_DSD_U32_BE;
+From 3a9236e97207f2469254b4098995159b80174d95 Mon Sep 17 00:00:00 2001
+From: Takashi Sakamoto <o-takashi@sakamocchi.jp>
+Date: Mon, 16 Sep 2019 19:18:51 +0900
+Subject: ALSA: dice: fix wrong packet parameter for Alesis iO26
+
+From: Takashi Sakamoto <o-takashi@sakamocchi.jp>
+
+commit 3a9236e97207f2469254b4098995159b80174d95 upstream.
+
+At higher sampling rate (e.g. 192.0 kHz), Alesis iO26 transfers 4 data
+channels per data block in CIP.
+
+Both iO14 and iO26 have the same contents in their configuration ROM.
+For this reason, ALSA Dice driver attempts to distinguish them according
+to the value of TX0_AUDIO register at probe callback. Although the way is
+valid at lower and middle sampling rate, it's lastly invalid at higher
+sampling rate because because the two models returns the same value for
+read transaction to the register.
+
+In the most cases, users just plug-in the device and ALSA dice driver
+detects it. In the case, the device runs at lower sampling rate and
+the driver detects expectedly. For this reason, this commit leaves the
+way to detect as is.
+
+Fixes: 28b208f600a3 ("ALSA: dice: add parameters of stream formats for models produced by Alesis")
+Cc: <stable@vger.kernel.org> # v4.18+
+Signed-off-by: Takashi Sakamoto <o-takashi@sakamocchi.jp>
+Link: https://lore.kernel.org/r/20190916101851.30409-1-o-takashi@sakamocchi.jp
+Signed-off-by: Takashi Iwai <tiwai@suse.de>
+Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+
+---
+ sound/firewire/dice/dice-alesis.c |    2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
+
+--- a/sound/firewire/dice/dice-alesis.c
++++ b/sound/firewire/dice/dice-alesis.c
+@@ -15,7 +15,7 @@ alesis_io14_tx_pcm_chs[MAX_STREAMS][SND_
+ 
+ static const unsigned int
+ alesis_io26_tx_pcm_chs[MAX_STREAMS][SND_DICE_RATE_MODE_COUNT] = {
+-	{10, 10, 8},	/* Tx0 = Analog + S/PDIF. */
++	{10, 10, 4},	/* Tx0 = Analog + S/PDIF. */
+ 	{16, 8, 0},	/* Tx1 = ADAT1 + ADAT2. */
+ };
+ 
+From 7b485d175631be676424aedb8cd2f66d0c93da78 Mon Sep 17 00:00:00 2001
+From: "Shih-Yuan Lee (FourDollars)" <fourdollars@debian.org>
+Date: Fri, 20 Sep 2019 21:40:53 +0800
+Subject: ALSA: hda - Add laptop imic fixup for ASUS M9V laptop
+
+From: Shih-Yuan Lee (FourDollars) <fourdollars@debian.org>
+
+commit 7b485d175631be676424aedb8cd2f66d0c93da78 upstream.
+
+The same fixup to enable laptop imic is needed for ASUS M9V with AD1986A
+codec like another HP machine.
+
+Signed-off-by: Shih-Yuan Lee (FourDollars) <fourdollars@debian.org>
+Cc: <stable@vger.kernel.org>
+Link: https://lore.kernel.org/r/20190920134052.GA8035@localhost
+Signed-off-by: Takashi Iwai <tiwai@suse.de>
+Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+
+---
+ sound/pci/hda/patch_analog.c |    1 +
+ 1 file changed, 1 insertion(+)
+
+--- a/sound/pci/hda/patch_analog.c
++++ b/sound/pci/hda/patch_analog.c
+@@ -357,6 +357,7 @@ static const struct hda_fixup ad1986a_fi
+ 
+ static const struct snd_pci_quirk ad1986a_fixup_tbl[] = {
+ 	SND_PCI_QUIRK(0x103c, 0x30af, "HP B2800", AD1986A_FIXUP_LAPTOP_IMIC),
++	SND_PCI_QUIRK(0x1043, 0x1153, "ASUS M9V", AD1986A_FIXUP_LAPTOP_IMIC),
+ 	SND_PCI_QUIRK(0x1043, 0x1443, "ASUS Z99He", AD1986A_FIXUP_EAPD),
+ 	SND_PCI_QUIRK(0x1043, 0x1447, "ASUS A8JN", AD1986A_FIXUP_EAPD),
+ 	SND_PCI_QUIRK_MASK(0x1043, 0xff00, 0x8100, "ASUS P5", AD1986A_FIXUP_3STACK),
+From d2c63b7dfd06788a466d5ec8a850491f084c5fc2 Mon Sep 17 00:00:00 2001
+From: Takashi Iwai <tiwai@suse.de>
+Date: Fri, 20 Sep 2019 09:30:40 +0200
+Subject: ALSA: hda - Apply AMD controller workaround for Raven platform
+
+From: Takashi Iwai <tiwai@suse.de>
+
+commit d2c63b7dfd06788a466d5ec8a850491f084c5fc2 upstream.
+
+It's reported that the garbled sound on HP Envy x360 13z-ag000 (Ryzen
+Laptop) is fixed by the same workaround applied to other AMD chips.
+Update the driver_data entry for Raven (1022:15e3) to use the newly
+introduced preset, AZX_DCAPS_PRESET_AMD_SB.  Since it already contains
+AZX_DCAPS_PM_RUNTIME, we can drop that bit, too.
+
+Reported-and-tested-by: Dennis Padiernos <depadiernos@gmail.com>
+Cc: <stable@vger.kernel.org>
+Link: https://lore.kernel.org/r/20190920073040.31764-1-tiwai@suse.de
+Signed-off-by: Takashi Iwai <tiwai@suse.de>
+Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+
+---
+ sound/pci/hda/hda_intel.c |    3 +--
+ 1 file changed, 1 insertion(+), 2 deletions(-)
+
+--- a/sound/pci/hda/hda_intel.c
++++ b/sound/pci/hda/hda_intel.c
+@@ -2517,8 +2517,7 @@ static const struct pci_device_id azx_id
+ 			 AZX_DCAPS_PM_RUNTIME },
+ 	/* AMD Raven */
+ 	{ PCI_DEVICE(0x1022, 0x15e3),
+-	  .driver_data = AZX_DRIVER_GENERIC | AZX_DCAPS_PRESET_ATI_SB |
+-			 AZX_DCAPS_PM_RUNTIME },
++	  .driver_data = AZX_DRIVER_GENERIC | AZX_DCAPS_PRESET_AMD_SB },
+ 	/* ATI HDMI */
+ 	{ PCI_DEVICE(0x1002, 0x0002),
+ 	  .driver_data = AZX_DRIVER_ATIHDMI_NS | AZX_DCAPS_PRESET_ATI_HDMI_NS },
+From 24a8d78a9affb63e5ced313ccde6888fe96edc6e Mon Sep 17 00:00:00 2001
+From: Heikki Krogerus <heikki.krogerus@linux.intel.com>
+Date: Fri, 20 Sep 2019 13:02:33 +0300
+Subject: platform/x86: i2c-multi-instantiate: Derive the device name from parent
+
+From: Heikki Krogerus <heikki.krogerus@linux.intel.com>
+
+commit 24a8d78a9affb63e5ced313ccde6888fe96edc6e upstream.
+
+When naming the new devices, instead of using the ACPI ID in
+the name as base, using the parent device's name. That makes
+it possible to support multiple multi-instance i2c devices
+of the same type in the same system.
+
+This fixes an issue seen on some Intel Kaby Lake based
+boards:
+
+sysfs: cannot create duplicate filename '/devices/pci0000:00/0000:00:15.0/i2c_designware.0/i2c-0/i2c-INT3515-tps6598x.0'
+
+Fixes: 2336dfadfb1e ("platform/x86: i2c-multi-instantiate: Allow to have same slaves")
+Cc: stable@vger.kernel.org
+Signed-off-by: Heikki Krogerus <heikki.krogerus@linux.intel.com>
+Reviewed-by: Hans de Goede <hdegoede@redhat.com>
+Signed-off-by: Andy Shevchenko <andriy.shevchenko@linux.intel.com>
+Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+
+---
+ drivers/platform/x86/i2c-multi-instantiate.c |    2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
+
+--- a/drivers/platform/x86/i2c-multi-instantiate.c
++++ b/drivers/platform/x86/i2c-multi-instantiate.c
+@@ -92,7 +92,7 @@ static int i2c_multi_inst_probe(struct p
+ 	for (i = 0; i < multi->num_clients && inst_data[i].type; i++) {
+ 		memset(&board_info, 0, sizeof(board_info));
+ 		strlcpy(board_info.type, inst_data[i].type, I2C_NAME_SIZE);
+-		snprintf(name, sizeof(name), "%s-%s.%d", match->id,
++		snprintf(name, sizeof(name), "%s-%s.%d", dev_name(dev),
+ 			 inst_data[i].type, i);
+ 		board_info.dev_name = name;
+ 		switch (inst_data[i].flags & IRQ_RESOURCE_TYPE) {
+From f73b3cc39c84220e6dccd463b5c8279b03514646 Mon Sep 17 00:00:00 2001
+From: Josh Poimboeuf <jpoimboe@redhat.com>
+Date: Thu, 29 Aug 2019 18:28:49 -0500
+Subject: objtool: Clobber user CFLAGS variable
+
+From: Josh Poimboeuf <jpoimboe@redhat.com>
+
+commit f73b3cc39c84220e6dccd463b5c8279b03514646 upstream.
+
+If the build user has the CFLAGS variable set in their environment,
+objtool blindly appends to it, which can cause unexpected behavior.
+
+Clobber CFLAGS to ensure consistent objtool compilation behavior.
+
+Reported-by: Valdis Kletnieks <valdis.kletnieks@vt.edu>
+Tested-by: Valdis Kletnieks <valdis.kletnieks@vt.edu>
+Signed-off-by: Josh Poimboeuf <jpoimboe@redhat.com>
+Cc: Linus Torvalds <torvalds@linux-foundation.org>
+Cc: Peter Zijlstra <peterz@infradead.org>
+Cc: Thomas Gleixner <tglx@linutronix.de>
+Link: https://lkml.kernel.org/r/83a276df209962e6058fcb6c615eef9d401c21bc.1567121311.git.jpoimboe@redhat.com
+Signed-off-by: Ingo Molnar <mingo@kernel.org>
+CC: Nathan Chancellor <natechancellor@gmail.com>
+Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+
+---
+ tools/objtool/Makefile |    2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
+
+--- a/tools/objtool/Makefile
++++ b/tools/objtool/Makefile
+@@ -35,7 +35,7 @@ INCLUDES := -I$(srctree)/tools/include \
+ 	    -I$(srctree)/tools/arch/$(HOSTARCH)/include/uapi \
+ 	    -I$(srctree)/tools/objtool/arch/$(ARCH)/include
+ WARNINGS := $(EXTRA_WARNINGS) -Wno-switch-default -Wno-switch-enum -Wno-packed
+-CFLAGS   += -Werror $(WARNINGS) $(KBUILD_HOSTCFLAGS) -g $(INCLUDES) $(LIBELF_FLAGS)
++CFLAGS   := -Werror $(WARNINGS) $(KBUILD_HOSTCFLAGS) -g $(INCLUDES) $(LIBELF_FLAGS)
+ LDFLAGS  += $(LIBELF_LIBS) $(LIBSUBCMD) $(KBUILD_HOSTLDFLAGS)
+ 
+ # Allow old libelf to be used:
