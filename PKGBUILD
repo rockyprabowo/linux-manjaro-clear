@@ -13,8 +13,8 @@ _basekernel=5.3
 _basever=53
 _aufs=20190812
 _sub=1
-pkgver=5.3.1
-pkgrel=2
+pkgver=5.3.2
+pkgrel=1
 arch=('i686' 'x86_64')
 url="http://www.kernel.org/"
 license=('GPL2')
@@ -42,8 +42,6 @@ source=("https://www.kernel.org/pub/linux/kernel/v5.x/linux-${_basekernel}.tar.x
         '0002-apparmor-af_unix-mediation.patch::https://gitlab.com/apparmor/apparmor-kernel/commit/7a291673471aa583694ee760aa33e5a3f5ae9a9e.patch'
         '0003-apparmor-fix-use-after-free-in-sk_peer_label.patch::https://gitlab.com/apparmor/apparmor-kernel/commit/9ae046ed7b54b01078e33227fa266282c41f981d.patch'
         '0004-apparmor-fix-apparmor-mediating-locking-non-fs-unix-sockets.patch::https://gitlab.com/apparmor/apparmor-kernel/commit/b6a5dfbaa728854457570bf72b693a89550cc1f8.patch'
-        '0001-amd_nb-add-pci-device-ids-for-family-17h-model-70h.patch::https://git.kernel.org/pub/scm/linux/kernel/git/next/linux-next.git/patch/?id=3fd670c3ff9528dc5cc903cb3dad8e2cd4650095'
-        '0002-amd_nb-add-pci-device-ids-for-family-17h-model-70h.patch::https://git.kernel.org/pub/scm/linux/kernel/git/next/linux-next.git/patch/?id=f80052919427ffb9103c64ca9c1e1aea13fd63bc'
         "prepatch-${_basekernel}.patch"
         # Bootsplash
         '0001-bootsplash.patch'
@@ -60,7 +58,7 @@ source=("https://www.kernel.org/pub/linux/kernel/v5.x/linux-${_basekernel}.tar.x
         '0012-bootsplash.patch'
         '0013-bootsplash.patch')
 sha256sums=('78f3c397513cf4ff0f96aa7d09a921d003e08fa97c09e0bb71d88211b40567b2'
-            '84cf9ac904a4af41c23b1830ea98872e43f014fe7daba3e295e45e7381024d34'
+            '377da3eec87a009c343880d81620e12264459049c653ad986e13b4f5be2b0337'
             'a6e436883ce6da6aabf3dd02cbb761cdfc21b115cf2fc569da60493c98ae9a41'
             'f5903377d29fc538af98077b81982efdc091a8c628cb85566e88e1b5018f12bf'
             'b44d81446d8b53d5637287c30ae3eb64cae0078c3fbc45fcf1081dd6699818b5'
@@ -80,9 +78,7 @@ sha256sums=('78f3c397513cf4ff0f96aa7d09a921d003e08fa97c09e0bb71d88211b40567b2'
             'ac2cff4d3b04dde98bafc67e1a898fa8628f3bacba08531ce473edc43ddcccff'
             '749ac28edc2cd2ac3a4406becc13327a1ece3445196ca41cbfca460454fa01bf'
             'e55e88fe22256f079f5ac7b015c2d510912cae6f48a27a0f768b8f5f6acfc11b'
-            '4690504af84e8c493132e8b7b1be57a0a0f940c420b05c14d4a17aef0ccbc16a'
-            '2bd3bd14537be9269e731174cf1b98cfba67f3c6e6e534ed9e21757e53493362'
-            'f2a1af1be21496f12442cd9186c8cea8571fb9cddffb6bc4ba0732f562ae85b9'
+            'a5754d813cb9c6a89bcdb4d8d69d380dc9759a4fb5f068bd78496733d791848b'
             'a504f6cf84094e08eaa3cc5b28440261797bf4f06f04993ee46a20628ff2b53c'
             'e096b127a5208f56d368d2cb938933454d7200d70c86b763aa22c38e0ddb8717'
             '8c1c880f2caa9c7ae43281a35410203887ea8eae750fe8d360d0c8bf80fcc6e0'
@@ -116,11 +112,6 @@ prepare() {
   patch -Np1 -i "${srcdir}/0002-apparmor-af_unix-mediation.patch"
   patch -Np1 -i "${srcdir}/0003-apparmor-fix-use-after-free-in-sk_peer_label.patch"
   patch -Np1 -i "${srcdir}/0004-apparmor-fix-apparmor-mediating-locking-non-fs-unix-sockets.patch"
-
-  # add PCI device IDs for family 17h, model 70h
-  # https://forum.manjaro.org/t/99703
-  patch -Np1 -i "${srcdir}/0001-amd_nb-add-pci-device-ids-for-family-17h-model-70h.patch"
-  patch -Np1 -i "${srcdir}/0002-amd_nb-add-pci-device-ids-for-family-17h-model-70h.patch"
 
   # Add bootsplash - http://lkml.iu.edu/hypermail/linux/kernel/1710.3/01542.html
   patch -Np1 -i "${srcdir}/0001-bootsplash.patch"
