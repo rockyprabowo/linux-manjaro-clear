@@ -13,8 +13,8 @@ _basekernel=5.3
 _basever=53
 _aufs=20190923
 _sub=1
-pkgver=5.3.2
-pkgrel=4
+pkgver=5.3.4
+pkgrel=1
 arch=('i686' 'x86_64')
 url="http://www.kernel.org/"
 license=('GPL2')
@@ -58,7 +58,7 @@ source=("https://www.kernel.org/pub/linux/kernel/v5.x/linux-${_basekernel}.tar.x
         '0012-bootsplash.patch'
         '0013-bootsplash.patch')
 sha256sums=('78f3c397513cf4ff0f96aa7d09a921d003e08fa97c09e0bb71d88211b40567b2'
-            '377da3eec87a009c343880d81620e12264459049c653ad986e13b4f5be2b0337'
+            '197e76acb5712332d66ca8bfd5461479e91188cc3364042cebd6d4326c4805a7'
             'a6e436883ce6da6aabf3dd02cbb761cdfc21b115cf2fc569da60493c98ae9a41'
             'f5903377d29fc538af98077b81982efdc091a8c628cb85566e88e1b5018f12bf'
             'b44d81446d8b53d5637287c30ae3eb64cae0078c3fbc45fcf1081dd6699818b5'
