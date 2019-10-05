@@ -11,10 +11,10 @@ pkgname=('linux53' 'linux53-headers')
 _kernelname=-MANJARO
 _basekernel=5.3
 _basever=53
-_aufs=20190812
+_aufs=20190923
 _sub=1
 pkgver=5.3.2
-pkgrel=1
+pkgrel=2
 arch=('i686' 'x86_64')
 url="http://www.kernel.org/"
 license=('GPL2')
@@ -27,7 +27,7 @@ source=("https://www.kernel.org/pub/linux/kernel/v5.x/linux-${_basekernel}.tar.x
         "${pkgbase}.preset" # standard config files for mkinitcpio ramdisk
         '60-linux.hook'     # pacman hook for depmod
         '90-linux.hook'     # pacman hook for initramfs regeneration
-        "aufs5.x-rcN-${_aufs}.patch"
+        "aufs5.3-${_aufs}.patch"
         'aufs5-base.patch'
         'aufs5-kbuild.patch'
         'aufs5-loopback.patch'
@@ -65,20 +65,20 @@ sha256sums=('78f3c397513cf4ff0f96aa7d09a921d003e08fa97c09e0bb71d88211b40567b2'
             '43942683a7ff01b180dff7f3de2db4885d43ab3d4e7bd0e1918c3aaf2ee061f4'
             'ae2e95db94ef7176207c690224169594d49445e04249d2499e9d2fbc117a0b21'
             '90831589b7ab43d6fab11bfa3ad788db14ba77ea4dc03d10ee29ad07194691e1'
-            '14f1c0e9adfd8e9e9e4601d0d76adf186d52855eae91eee83c9f1aa449808799'
-            '29bb58757da5a4bd871c85d83427e2ccb4d6fddafc768718ea077eadea372ed4'
-            '789a933080a85120dbeb12de2f243498b5e454128f2cf77dd16d47a27b235f79'
-            'c0335e5d3b1fe5263742a6d3ac406e02eb230e06a75bb8bf5ad84676f4e42e63'
-            '6d30c7ae416ec2c4632f44acd7d94baa842937cc45e6b50c6cff8ae1bad08619'
-            '70808c260372548760c306ac36cb62c186b5ab50c67a2cad6678061730cc8e38'
-            'a194c5eace0a38466ac34548c637297e949bb85abb61a43bab6187eb499e3aad'
+            'fb57bd74a20ca03559fcd3e5418069e9449ccc8629cc6c6812dca468c9d9f797'
+            'da26a3800b23a0342b58badf72f708c5e40cf256a7dcc6851fdcab2073888ebf'
+            'f6d43c68f35c5fafbb93b6ac13fe9e7fdabf7b134f8c08ebb4a7ec4b4e7d7fb3'
+            '30a44c836859156b8724c92c6bcb9eaba4cf891ce13147c7bf8433b5bc29177e'
+            'd73cfe15d67ff1bc77d9e9343486c3a34cbb8dc293e7ec3eb33297e171b84804'
+            '3f53f56f6c883876c9ceff2af3abeb73e5a06cdfc3773b72be95c218ce9f8113'
+            '55dc8df3a3d3e248eb93f5878f567428f77acb72f6243934bd6980cfede3b6ca'
             'e2d75e11a2c220e5d3a450bb226e7e19d62a871764da5f76034fbc135fe6c749'
             '7685d526bbdbfa795986591a70071c960ff572f56d3501774861728a9df8664c'
             '4b4146786e68af3bd49e9fabdbc92232e51cb2da179ba8037287b96d8addd17c'
             'ac2cff4d3b04dde98bafc67e1a898fa8628f3bacba08531ce473edc43ddcccff'
             '749ac28edc2cd2ac3a4406becc13327a1ece3445196ca41cbfca460454fa01bf'
             'e55e88fe22256f079f5ac7b015c2d510912cae6f48a27a0f768b8f5f6acfc11b'
-            'a5754d813cb9c6a89bcdb4d8d69d380dc9759a4fb5f068bd78496733d791848b'
+            '22be2d8c4c431a5da768180838f618cb6d69be8ed450b47a1281f5cc966489f8'
             'a504f6cf84094e08eaa3cc5b28440261797bf4f06f04993ee46a20628ff2b53c'
             'e096b127a5208f56d368d2cb938933454d7200d70c86b763aa22c38e0ddb8717'
             '8c1c880f2caa9c7ae43281a35410203887ea8eae750fe8d360d0c8bf80fcc6e0'
@@ -130,7 +130,7 @@ prepare() {
   git apply -p1 < "${srcdir}/0013-bootsplash.patch"
 
   # add aufs5 support
-  patch -Np1 -i "${srcdir}/aufs5.x-rcN-${_aufs}.patch"
+  patch -Np1 -i "${srcdir}/aufs5.3-${_aufs}.patch"
   patch -Np1 -i "${srcdir}/aufs5-base.patch"
   patch -Np1 -i "${srcdir}/aufs5-kbuild.patch"
   patch -Np1 -i "${srcdir}/aufs5-loopback.patch"
