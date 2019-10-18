@@ -37,6 +37,7 @@ source=("https://www.kernel.org/pub/linux/kernel/v5.x/linux-${_basekernel}.tar.x
         'vfs-ino.patch'
         # ARCH Patches
         0001-ZEN-Add-sysctl-and-CONFIG-to-disallow-unprivileged-CLONE_NEWUSER.patch
+        0002-bluetooth-fix-assumptions-on-the-return-value-of-hidp_send_message.patch
         # MANJARO Patches
         '0001-apparmor-patch-to-provide-compatibility-with-v2-net-rules.patch::https://gitlab.com/apparmor/apparmor-kernel/commit/6408dbde30855bb9a2af44c9053ba2329db57c7f.patch'
         '0002-apparmor-af_unix-mediation.patch::https://gitlab.com/apparmor/apparmor-kernel/commit/7a291673471aa583694ee760aa33e5a3f5ae9a9e.patch'
@@ -74,6 +75,7 @@ sha256sums=('78f3c397513cf4ff0f96aa7d09a921d003e08fa97c09e0bb71d88211b40567b2'
             '55dc8df3a3d3e248eb93f5878f567428f77acb72f6243934bd6980cfede3b6ca'
             'e2d75e11a2c220e5d3a450bb226e7e19d62a871764da5f76034fbc135fe6c749'
             '7685d526bbdbfa795986591a70071c960ff572f56d3501774861728a9df8664c'
+            '24259dbc5e452a7ace71308d070e96c5e3944a5c457931cfe4e0fb501ad188f0'
             '4b4146786e68af3bd49e9fabdbc92232e51cb2da179ba8037287b96d8addd17c'
             'ac2cff4d3b04dde98bafc67e1a898fa8628f3bacba08531ce473edc43ddcccff'
             '749ac28edc2cd2ac3a4406becc13327a1ece3445196ca41cbfca460454fa01bf'
@@ -104,6 +106,8 @@ prepare() {
 
   # disable USER_NS for non-root users by default
   patch -Np1 -i ../0001-ZEN-Add-sysctl-and-CONFIG-to-disallow-unprivileged-CLONE_NEWUSER.patch
+
+  patch -Np1 -i ../0002-bluetooth-fix-assumptions-on-the-return-value-of-hidp_send_message.patch
 
   # add patches for snapd
   # https://gitlab.com/apparmor/apparmor-kernel/tree/5.2-outoftree
