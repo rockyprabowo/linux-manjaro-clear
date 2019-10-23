@@ -48,7 +48,6 @@ source=("https://www.kernel.org/pub/linux/kernel/v5.x/linux-${_basekernel}.tar.x
         '0003-v5-xps13-mfd-intel-lpss-use-devm_ioremap_uc-for-MMIO.patch'
         '0004-v5-xps13-docs-driver-model-add-devm_ioremap_uc.patch'
         '0001-nonupstream-navi10-vfio-reset.patch'
-        '0001-ALSA-hda-Allow-HDA-to-be-runtime-suspended-when-dGPU-is-not-bound-to-a-driver.patch'
         #"prepatch-${_basekernel}.patch"
         # Bootsplash
         '0001-bootsplash.patch'
@@ -66,7 +65,7 @@ source=("https://www.kernel.org/pub/linux/kernel/v5.x/linux-${_basekernel}.tar.x
         '0013-bootsplash.patch')
 sha256sums=('78f3c397513cf4ff0f96aa7d09a921d003e08fa97c09e0bb71d88211b40567b2'
             '2b538186d4037672e5514cbbcae39d3bdddd33e1fe4428fcfc1c0e1f11302f63'
-            '99c9124f7341c994a239cf9a97a1ca0cceac642fdecd1cf529f89a7de3400094'
+            '33a0b42337054d4d41028a5ab7b2d119be4581c4addda552a6e494da8ce10c30'
             'f5903377d29fc538af98077b81982efdc091a8c628cb85566e88e1b5018f12bf'
             'b44d81446d8b53d5637287c30ae3eb64cae0078c3fbc45fcf1081dd6699818b5'
             '43942683a7ff01b180dff7f3de2db4885d43ab3d4e7bd0e1918c3aaf2ee061f4'
@@ -91,7 +90,6 @@ sha256sums=('78f3c397513cf4ff0f96aa7d09a921d003e08fa97c09e0bb71d88211b40567b2'
             '267a28e932095238604e4e23062d142fa1e2836b629190e673614159968dbec7'
             'e82c72cd391261e79ae25330848877c451b4fa60cabed9c16898983eab269c89'
             '7a2758f86dd1339f0f1801de2dbea059b55bf3648e240878b11e6d6890d3089c'
-            '592812442a0ba5c968149907cd374569818b1a6f7ecb837e7b1362b1b7d5ceb7'
             'a504f6cf84094e08eaa3cc5b28440261797bf4f06f04993ee46a20628ff2b53c'
             'e096b127a5208f56d368d2cb938933454d7200d70c86b763aa22c38e0ddb8717'
             '8c1c880f2caa9c7ae43281a35410203887ea8eae750fe8d360d0c8bf80fcc6e0'
@@ -140,9 +138,6 @@ prepare() {
   # https://forum.level1techs.com/t/145666/86
   # https://forum.manjaro.org/t/107820/11
   patch -Np1 -i "${srcdir}/0001-nonupstream-navi10-vfio-reset.patch"
-
-  # https://forum.manjaro.org/t/98724/169
-  patch -Np1 -i "${srcdir}/0001-ALSA-hda-Allow-HDA-to-be-runtime-suspended-when-dGPU-is-not-bound-to-a-driver.patch"
 
   # Add bootsplash - http://lkml.iu.edu/hypermail/linux/kernel/1710.3/01542.html
   patch -Np1 -i "${srcdir}/0001-bootsplash.patch"
