@@ -14,7 +14,7 @@ _basever=53
 _aufs=20190923
 _sub=1
 pkgver=5.3.8
-pkgrel=2
+pkgrel=3
 arch=('i686' 'x86_64')
 url="http://www.kernel.org/"
 license=('GPL2')
@@ -48,6 +48,7 @@ source=("https://www.kernel.org/pub/linux/kernel/v5.x/linux-${_basekernel}.tar.x
         '0003-v5-xps13-mfd-intel-lpss-use-devm_ioremap_uc-for-MMIO.patch'
         '0004-v5-xps13-docs-driver-model-add-devm_ioremap_uc.patch'
         '0001-nonupstream-navi10-vfio-reset.patch'
+        '0001-drm-amdgpu-Add-DC-feature-mask-to-disable-fractional-pwm.patch'
         #"prepatch-${_basekernel}.patch"
         # Bootsplash
         '0001-bootsplash.patch'
@@ -90,6 +91,7 @@ sha256sums=('78f3c397513cf4ff0f96aa7d09a921d003e08fa97c09e0bb71d88211b40567b2'
             '267a28e932095238604e4e23062d142fa1e2836b629190e673614159968dbec7'
             'e82c72cd391261e79ae25330848877c451b4fa60cabed9c16898983eab269c89'
             '7a2758f86dd1339f0f1801de2dbea059b55bf3648e240878b11e6d6890d3089c'
+            '5b38d1666d51f8863117ec1d107d3f1c68a57e2b2ab44da1a7da10cbfc7f8ef3'
             'a504f6cf84094e08eaa3cc5b28440261797bf4f06f04993ee46a20628ff2b53c'
             'e096b127a5208f56d368d2cb938933454d7200d70c86b763aa22c38e0ddb8717'
             '8c1c880f2caa9c7ae43281a35410203887ea8eae750fe8d360d0c8bf80fcc6e0'
@@ -132,6 +134,9 @@ prepare() {
   patch -Np1 -i "${srcdir}/0002-v5-xps13-lib-devres-add-a-helper-function-for-ioremap_uc.patch"
   patch -Np1 -i "${srcdir}/0003-v5-xps13-mfd-intel-lpss-use-devm_ioremap_uc-for-MMIO.patch"
   patch -Np1 -i "${srcdir}/0004-v5-xps13-docs-driver-model-add-devm_ioremap_uc.patch"
+
+  # https://bugzilla.kernel.org/show_bug.cgi?id=204957
+  patch -Np1 -i "${srcdir}/0001-drm-amdgpu-Add-DC-feature-mask-to-disable-fractional-pwm.patch"
 
   # TODO: remove when AMD properly fixes it!
   # INFO: this is a hack and won't be upstreamed
