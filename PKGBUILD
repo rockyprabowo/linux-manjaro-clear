@@ -5,15 +5,18 @@
 # Maintainer: Philip Müller (x86_64) <philm@manjaro.org>
 # Maintainer: Jonathon Fernyhough (i686) <jonathon@manjaro.org>
 # Contributor: Helmut Stult <helmut[at]manjaro[dot]org>
-
-pkgbase=linux53
-pkgname=('linux53' 'linux53-headers')
-_kernelname=-MANJARO
-_basekernel=5.3
-_basever=53
+_major=5.3
+_minor=8
+_basekernel=${_major}
+_basever=${_major/./}
+_srcname=linux-${_major}
+_clr=${_major}.7-853
 _aufs=20190923
-_sub=1
-pkgver=5.3.8
+_gcc_more_v='20190822'
+pkgbase=linux-manjaro-clear
+pkgname=('linux-manjaro-clear' 'linux-manjaro-clear-headers')
+_kernelname=-MANJARO-clear
+pkgver=${_major}.${_minor}
 pkgrel=1
 arch=('i686' 'x86_64')
 url="http://www.kernel.org/"
@@ -48,6 +51,13 @@ source=("https://www.kernel.org/pub/linux/kernel/v5.x/linux-${_basekernel}.tar.x
         '0003-v5-xps13-mfd-intel-lpss-use-devm_ioremap_uc-for-MMIO.patch'
         '0004-v5-xps13-docs-driver-model-add-devm_ioremap_uc.patch'
         '0001-nonupstream-navi10-vfio-reset.patch'
+        # clear Patches
+        "enable_additional_cpu_optimizations-$_gcc_more_v.tar.gz::https://github.com/graysky2/kernel_gcc_patch/archive/$_gcc_more_v.tar.gz"
+        "clearlinux::git+https://github.com/clearlinux-pkgs/linux.git#tag=${_clr}"
+        'add-acs-overrides.patch::https://aur.archlinux.org/cgit/aur.git/plain/add-acs-overrides.patch?h=linux-vfio'
+        # My Patches
+        "kernel-5.3-nvme-discard-align-to-page-size.patch"
+        '0001-drm-amdgpu-Add-DC-feature-mask-to-disable-fractional-pwm.patch'
         #"prepatch-${_basekernel}.patch"
         # Bootsplash
         '0001-bootsplash.patch'
@@ -62,15 +72,16 @@ source=("https://www.kernel.org/pub/linux/kernel/v5.x/linux-${_basekernel}.tar.x
         '0010-bootsplash.patch'
         '0011-bootsplash.patch'
         '0012-bootsplash.patch'
-        '0013-bootsplash.patch')
+        '0013-bootsplash.patch'
+       )
 sha256sums=('78f3c397513cf4ff0f96aa7d09a921d003e08fa97c09e0bb71d88211b40567b2'
             '7225bd200069c7dd4fbae5cfe1c24f4f73939ea5bd213e20ac62771bdc9e7578'
-            '33a0b42337054d4d41028a5ab7b2d119be4581c4addda552a6e494da8ce10c30'
+            '2cd4aed40dea452ce36e6a61dcf62d3147ff2c845ac5a56c440e83fd09d9fb8e'
             'f5903377d29fc538af98077b81982efdc091a8c628cb85566e88e1b5018f12bf'
             'b44d81446d8b53d5637287c30ae3eb64cae0078c3fbc45fcf1081dd6699818b5'
-            '43942683a7ff01b180dff7f3de2db4885d43ab3d4e7bd0e1918c3aaf2ee061f4'
+            'd11a113e79a1828b15d7d1198439afa200961c5a4eb836fb60d1f627c3fda118'
             'ae2e95db94ef7176207c690224169594d49445e04249d2499e9d2fbc117a0b21'
-            '90831589b7ab43d6fab11bfa3ad788db14ba77ea4dc03d10ee29ad07194691e1'
+            '698a597ad5a1f3a6e6d317b87f4f179e48d0c5a828b7799ff7982d3536c55318'
             'fb57bd74a20ca03559fcd3e5418069e9449ccc8629cc6c6812dca468c9d9f797'
             'da26a3800b23a0342b58badf72f708c5e40cf256a7dcc6851fdcab2073888ebf'
             'f6d43c68f35c5fafbb93b6ac13fe9e7fdabf7b134f8c08ebb4a7ec4b4e7d7fb3'
@@ -90,6 +101,11 @@ sha256sums=('78f3c397513cf4ff0f96aa7d09a921d003e08fa97c09e0bb71d88211b40567b2'
             '267a28e932095238604e4e23062d142fa1e2836b629190e673614159968dbec7'
             'e82c72cd391261e79ae25330848877c451b4fa60cabed9c16898983eab269c89'
             '7a2758f86dd1339f0f1801de2dbea059b55bf3648e240878b11e6d6890d3089c'
+            '8c11086809864b5cef7d079f930bd40da8d0869c091965fa62e95de9a0fe13b5'
+            'SKIP'
+            'dbf4ac4b873ce6972e63b78d74ddba18f2701716163bb7f4b4fe5e909346a6e1'
+            'd3d5e11d78ba5652281714deb12aefe725852b18552ef710d244844a38af0373'
+            '5b38d1666d51f8863117ec1d107d3f1c68a57e2b2ab44da1a7da10cbfc7f8ef3'
             'a504f6cf84094e08eaa3cc5b28440261797bf4f06f04993ee46a20628ff2b53c'
             'e096b127a5208f56d368d2cb938933454d7200d70c86b763aa22c38e0ddb8717'
             '8c1c880f2caa9c7ae43281a35410203887ea8eae750fe8d360d0c8bf80fcc6e0'
@@ -103,6 +119,48 @@ sha256sums=('78f3c397513cf4ff0f96aa7d09a921d003e08fa97c09e0bb71d88211b40567b2'
             '27471eee564ca3149dd271b0817719b5565a9594dc4d884fe3dc51a5f03832bc'
             '60e295601e4fb33d9bf65f198c54c7eb07c0d1e91e2ad1e0dd6cd6e142cb266d'
             '035ea4b2a7621054f4560471f45336b981538a40172d8f17285910d4e0e0b3ef')
+
+# Optionally select a sub architecture by number if building in a clean chroot
+# Leaving this entry blank will require user interaction during the build
+# which will cause a failure to build if using makechrootpkg. Note that the
+# generic (default) option is 30.
+#
+# Note - the march=native option is unavailable by this method, use the nconfig
+# and manually select it.
+#
+#  1. AMD Opteron/Athlon64/Hammer/K8 (MK8)
+#  2. AMD Opteron/Athlon64/Hammer/K8 with SSE3 (MK8SSE3)
+#  3. AMD 61xx/7x50/PhenomX3/X4/II/K10 (MK10)
+#  4. AMD Barcelona (MBARCELONA)
+#  5. AMD Bobcat (MBOBCAT)
+#  6. AMD Jaguar (MJAGUAR)
+#  7. AMD Bulldozer (MBULLDOZER)
+#  8. AMD Piledriver (MPILEDRIVER)
+#  9. AMD Steamroller (MSTEAMROLLER)
+#  10. AMD Excavator (MEXCAVATOR)
+#  11. AMD Zen (MZEN)
+#  12. AMD Zen 2 (MZEN2)
+#  13. Intel P4 / older Netburst based Xeon (MPSC)
+#  14. Intel Atom (MATOM)
+#  15. Intel Core 2 (MCORE2)
+#  16. Intel Nehalem (MNEHALEM)
+#  17. Intel Westmere (MWESTMERE)
+#  18. Intel Silvermont (MSILVERMONT)
+#  19. Intel Goldmont (MGOLDMONT)
+#  20. Intel Goldmont Plus (MGOLDMONTPLUS)
+#  21. Intel Sandy Bridge (MSANDYBRIDGE)
+#  22. Intel Ivy Bridge (MIVYBRIDGE)
+#  23. Intel Haswell (MHASWELL)
+#  24. Intel Broadwell (MBROADWELL)
+#  25. Intel Skylake (MSKYLAKE)
+#  26. Intel Skylake X (MSKYLAKEX)
+#  27. Intel Cannon Lake (MCANNONLAKE)
+#  28. Intel Ice Lake (MICELAKE)
+#  29. Intel Cascade Lake (MCASCADELAKE)
+#  30. Generic-x86-64 (GENERIC_CPU)
+#  31. Native optimizations autodetected by GCC (MNATIVE)
+_subarch=31
+
 prepare() {
   cd "${srcdir}/linux-${_basekernel}"
 
@@ -132,6 +190,9 @@ prepare() {
   patch -Np1 -i "${srcdir}/0002-v5-xps13-lib-devres-add-a-helper-function-for-ioremap_uc.patch"
   patch -Np1 -i "${srcdir}/0003-v5-xps13-mfd-intel-lpss-use-devm_ioremap_uc-for-MMIO.patch"
   patch -Np1 -i "${srcdir}/0004-v5-xps13-docs-driver-model-add-devm_ioremap_uc.patch"
+
+  # https://bugzilla.kernel.org/show_bug.cgi?id=204957
+  patch -Np1 -i "${srcdir}/0001-drm-amdgpu-Add-DC-feature-mask-to-disable-fractional-pwm.patch"
 
   # TODO: remove when AMD properly fixes it!
   # INFO: this is a hack and won't be upstreamed
@@ -177,12 +238,106 @@ prepare() {
     sed -i "s|CONFIG_LOCALVERSION=.*|CONFIG_LOCALVERSION=\"${_kernelname}\"|g" ./.config
     sed -i "s|CONFIG_LOCALVERSION_AUTO=.*|CONFIG_LOCALVERSION_AUTO=n|" ./.config
   fi
+  # My Patches
+  patch -Np1 -i "${srcdir}/kernel-5.3-nvme-discard-align-to-page-size.patch"
+  ### Add Clearlinux patches
+  for i in $(grep '^Patch' ${srcdir}/clearlinux/linux.spec | grep -Ev '^Patch0123' | sed -n 's/.*: //p'); do
+  msg2 "Applying patch ${i}..."
+  patch -Np1 -i "$srcdir/clearlinux/${i}"
+  done
+
+  ### Setting config
+  msg2 "Setting config..."
+  cp -Tf $srcdir/clearlinux/config ./.config
+
+  ### Enable extra stuff from arch kernel
+  msg2 "Enable extra stuff from arch kernel..."
+
+  scripts/config --undefine MODULE_SIG_FORCE \
+                  --enable MODULE_COMPRESS \
+                  --enable-after MODULE_COMPRESS MODULE_COMPRESS_XZ \
+                  --enable DELL_SMBIOS_SMM \
+                  --module IKCONFIG \
+                  --enable-after IKCONFIG IKCONFIG_PROC \
+                  --enable-after SOUND SOUND_OSS_CORE \
+                  --enable SND_OSSEMUL \
+                  --module-after SND_OSSEMUL SND_MIXER_OSS \
+                  --module-after SND_MIXER_OSS SND_PCM_OSS \
+                  --enable-after SND_PCM_OSS SND_PCM_OSS_PLUGINS
+
+  # Scheduler features
+  scripts/config --undefine RT_GROUP_SCHED
+
+  # Queueing/Scheduling
+  scripts/config --module NET_SCH_CAKE
+
+  # PATA SFF controllers with BMDMA
+  scripts/config --module PATA_JMICRON
+
+  # Power management and ACPI options
+  scripts/config --enable ACPI_REV_OVERRIDE_POSSIBLE \
+                  --enable HIBERNATION
+
+  # Console display driver support
+  scripts/config --enable FRAMEBUFFER_CONSOLE_DEFERRED_TAKEOVER
+
+  # Security options
+  scripts/config --enable SECURITY_SELINUX \
+                  --enable-after SECURITY_SELINUX SECURITY_SELINUX_BOOTPARAM \
+                  --enable SECURITY_SMACK \
+                  --enable-after SECURITY_SMACK SECURITY_SMACK_BRINGUP \
+                  --enable-after SECURITY_SMACK_BRINGUP SECURITY_SMACK_NETFILTER \
+                  --enable-after SECURITY_SMACK_NETFILTER SECURITY_SMACK_APPEND_SIGNALS \
+                  --enable SECURITY_TOMOYO \
+                  --enable SECURITY_APPARMOR \
+                  --enable SECURITY_YAMA
+
+  make olddefconfig
+
+  ### Patch source to unlock additional gcc CPU optimizations
+  # https://github.com/graysky2/kernel_gcc_patch
+  if [ "${_enable_gcc_more_v}" = "y" ]; then
+  msg2 "Applying enable_additional_cpu_optimizations_for_gcc_v9.1+_kernel_v4.13+.patch ..."
+  patch -Np1 -i "$srcdir/kernel_gcc_patch-$_gcc_more_v/enable_additional_cpu_optimizations_for_gcc_v9.1+_kernel_v4.13+.patch"
+  fi
+
+  ### Enable ACS override patch
+  if [ "${_enable_acs_override}" = "y" ]; then
+  msg2 "Enabling ACS override patch..."
+  patch -Np1 -i "$srcdir/add-acs-overrides.patch"
+  fi
+
+  ### Get kernel version
+  if [ "${_enable_gcc_more_v}" = "y" ] || [ -n "${_subarch}" ]; then
+  yes "$_subarch" | make oldconfig
+  else
+  make prepare
+  fi
+
+  ### Prepared version
+  make -s kernelrelease > version
+  msg2 "Prepared %s version %s" "$pkgbase" "$(<version)"
+
+  ### Optionally load needed modules for the make localmodconfig
+  # See https://aur.archlinux.org/packages/modprobed-db
+  if [ -n "$_localmodcfg" ]; then
+    if [ -f $HOME/.config/modprobed.db ]; then
+      msg2 "Running Steven Rostedt's make localmodconfig now"
+      make LSMOD=$HOME/.config/modprobed.db localmodconfig
+    else
+      msg2 "No modprobed.db data found"
+      exit
+    fi
+  fi
+
+  ### do not run `make olddefconfig` as it sets default options
+  yes "" | make config >/dev/null
 
   # set patchlevel to 2
-#  sed -ri "s|^(PATCHLEVEL =).*|\1 2|" Makefile
+  # sed -ri "s|^(PATCHLEVEL =).*|\1 2|" Makefile
 
   # set extraversion to pkgrel
-  sed -ri "s|^(EXTRAVERSION =).*|\1 -${pkgrel}|" Makefile
+  sed -ri "s|^(EXTRAVERSION =).*|\1 ${_kernelname}-${pkgrel}|" Makefile
 
   # don't run depmod on 'make install'. We'll do this ourselves in packaging
   sed -i '2iexit 0' scripts/depmod.sh
@@ -200,6 +355,9 @@ prepare() {
 
   # rewrite configuration
   yes "" | make config >/dev/null
+
+  ### Save configuration for later reuse
+  cp -Tf ./.config "${startdir}/config-${pkgver}-${pkgrel}${_kernelname}"
 }
 
 build() {
@@ -209,11 +367,11 @@ build() {
   make ${MAKEFLAGS} LOCALVERSION= bzImage modules
 }
 
-package_linux53() {
+package_linux-manjaro-clear() {
   pkgdesc="The ${pkgbase/linux/Linux} kernel and modules"
   depends=('coreutils' 'linux-firmware' 'kmod' 'mkinitcpio>=0.7')
   optdepends=('crda: to set the correct wireless channels of your country')
-  provides=("linux=${pkgver}")
+  provides=("linux-clear=${pkgver}")
   backup=("etc/mkinitcpio.d/${pkgbase}.preset")
   install=${pkgname}.install
 
@@ -226,13 +384,14 @@ package_linux53() {
 
   mkdir -p "${pkgdir}"/{boot,usr/lib/modules}
   make LOCALVERSION= INSTALL_MOD_PATH="${pkgdir}/usr" modules_install
-  cp arch/$KARCH/boot/bzImage "${pkgdir}/boot/vmlinuz-${_basekernel}-${CARCH}"
+  # cp arch/$KARCH/boot/bzImage "${pkgdir}/boot/vmlinuz-${_basekernel}-${CARCH}"
+  cp arch/$KARCH/boot/bzImage "${pkgdir}/boot/vmlinuz-${_basekernel}${_kernelname}-${CARCH}"
 
   # add kernel version
   if [ "${CARCH}" = "x86_64" ]; then
-     echo "${pkgver}-${pkgrel}-MANJARO x64" > "${pkgdir}/boot/${pkgbase}-${CARCH}.kver"
+     echo "${pkgver}-${pkgrel}-MANJARO-clear x64" > "${pkgdir}/boot/${pkgbase}-${CARCH}.kver"
   else
-     echo "${pkgver}-${pkgrel}-MANJARO x32" > "${pkgdir}/boot/${pkgbase}-${CARCH}.kver"
+     echo "${pkgver}-${pkgrel}-MANJARO-clear x32" > "${pkgdir}/boot/${pkgbase}-${CARCH}.kver"
   fi
 
   # make room for external modules
@@ -256,6 +415,7 @@ package_linux53() {
   local _subst="
     s|%PKGBASE%|${pkgbase}|g
     s|%BASEKERNEL%|${_basekernel}|g
+    s|%KERNELNAME%|${_kernelname}|g
     s|%ARCH%|${CARCH}|g
     s|%KERNVER%|${_kernver}|g
     s|%EXTRAMODULES%|${_extramodules}|g
@@ -266,7 +426,7 @@ package_linux53() {
   true && install=${install}.pkg
 
   # install mkinitcpio preset file
-  sed "${_subst}" ${srcdir}/linux53.preset |
+  sed "${_subst}" ${srcdir}/linux-manjaro-clear.preset |
     install -Dm644 /dev/stdin "${pkgdir}/etc/mkinitcpio.d/${pkgbase}.preset"
 
   # install pacman hooks
@@ -276,9 +436,9 @@ package_linux53() {
     install -Dm644 /dev/stdin "${pkgdir}/usr/share/libalpm/hooks/90-${pkgbase}.hook"
 }
 
-package_linux53-headers() {
+package_linux-manjaro-clear-headers() {
   pkgdesc="Header files and scripts for building modules for ${pkgbase/linux/Linux} kernel"
-  provides=("linux-headers=$pkgver")
+  provides=("linux-clear-headers=$pkgver")
 
   cd "${srcdir}/linux-${_basekernel}"
   local _builddir="${pkgdir}/usr/lib/modules/${_kernver}/build"
