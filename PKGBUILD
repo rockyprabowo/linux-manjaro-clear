@@ -10,14 +10,14 @@ _minor=8
 _basekernel=${_major}
 _basever=${_major/./}
 _srcname=linux-${_major}
-_clr=${_major}.7-853
+_clr=${_major}.8-854
 _aufs=20190923
 _gcc_more_v='20190822'
 pkgbase=linux-manjaro-clear
 pkgname=('linux-manjaro-clear' 'linux-manjaro-clear-headers')
 _kernelname=-MANJARO-clear
 pkgver=${_major}.${_minor}
-pkgrel=1
+pkgrel=2
 arch=('i686' 'x86_64')
 url="http://www.kernel.org/"
 license=('GPL2')
@@ -53,7 +53,8 @@ source=("https://www.kernel.org/pub/linux/kernel/v5.x/linux-${_basekernel}.tar.x
         '0001-nonupstream-navi10-vfio-reset.patch'
         # clear Patches
         "enable_additional_cpu_optimizations-$_gcc_more_v.tar.gz::https://github.com/graysky2/kernel_gcc_patch/archive/$_gcc_more_v.tar.gz"
-        "clearlinux::git+https://github.com/clearlinux-pkgs/linux.git#tag=${_clr}"
+        # "clearlinux::git+https://github.com/clearlinux-pkgs/linux.git#tag=${_clr}"
+        "clearlinux.tar.gz::https://codeload.github.com/clearlinux-pkgs/linux/tar.gz/${_clr}"
         'add-acs-overrides.patch::https://aur.archlinux.org/cgit/aur.git/plain/add-acs-overrides.patch?h=linux-vfio'
         # My Patches
         "kernel-5.3-nvme-discard-align-to-page-size.patch"
@@ -102,7 +103,7 @@ sha256sums=('78f3c397513cf4ff0f96aa7d09a921d003e08fa97c09e0bb71d88211b40567b2'
             'e82c72cd391261e79ae25330848877c451b4fa60cabed9c16898983eab269c89'
             '7a2758f86dd1339f0f1801de2dbea059b55bf3648e240878b11e6d6890d3089c'
             '8c11086809864b5cef7d079f930bd40da8d0869c091965fa62e95de9a0fe13b5'
-            'SKIP'
+            'ba1e418844268e01bb63752d8d6774cdf9d528f16b94a921cc4980456a78cf55'
             'dbf4ac4b873ce6972e63b78d74ddba18f2701716163bb7f4b4fe5e909346a6e1'
             'd3d5e11d78ba5652281714deb12aefe725852b18552ef710d244844a38af0373'
             '5b38d1666d51f8863117ec1d107d3f1c68a57e2b2ab44da1a7da10cbfc7f8ef3'
@@ -241,14 +242,14 @@ prepare() {
   # My Patches
   patch -Np1 -i "${srcdir}/kernel-5.3-nvme-discard-align-to-page-size.patch"
   ### Add Clearlinux patches
-  for i in $(grep '^Patch' ${srcdir}/clearlinux/linux.spec | grep -Ev '^Patch0123' | sed -n 's/.*: //p'); do
+  for i in $(grep '^Patch' ${srcdir}/linux-${_clr}/linux.spec | grep -Ev '^Patch0123' | sed -n 's/.*: //p'); do
   msg2 "Applying patch ${i}..."
-  patch -Np1 -i "$srcdir/clearlinux/${i}"
+  patch -Np1 -i "$srcdir/linux-${_clr}/${i}"
   done
 
   ### Setting config
   msg2 "Setting config..."
-  cp -Tf $srcdir/clearlinux/config ./.config
+  cp -Tf $srcdir/linux-${_clr}/config ./.config
 
   ### Enable extra stuff from arch kernel
   msg2 "Enable extra stuff from arch kernel..."
@@ -290,7 +291,19 @@ prepare() {
                   --enable-after SECURITY_SMACK_NETFILTER SECURITY_SMACK_APPEND_SIGNALS \
                   --enable SECURITY_TOMOYO \
                   --enable SECURITY_APPARMOR \
-                  --enable SECURITY_YAMA
+                  --enable SECURITY_YAMA \
+
+  # AMD
+  scripts/config --enable KVM_COMPAT \
+                  --enable KVM_AMD_SEV \
+                  --enable DRM_AMD_DC_DCN2_0 \
+                  --enable AMD_IOMMU \
+                  --enable AMD_IOMMU_V2 \
+                  --module GPIO_AMD_FCH \
+                  --module NTB_AMD \
+
+  # ACPI Table Upgrade
+  scripts/config --enable ACPI_TABLE_UPGRADE
 
   make olddefconfig
 
