@@ -240,7 +240,9 @@ prepare() {
     sed -i "s|CONFIG_LOCALVERSION_AUTO=.*|CONFIG_LOCALVERSION_AUTO=n|" ./.config
   fi
   # My Patches
+  # Fix for NVMe IOMMU errors when fstrim/discard is executed: https://bugzilla.kernel.org/show_bug.cgi?id=202665
   patch -Np1 -i "${srcdir}/kernel-5.3-nvme-discard-align-to-page-size.patch"
+
   ### Add Clearlinux patches
   for i in $(grep '^Patch' ${srcdir}/linux-${_clr}/linux.spec | grep -Ev '^Patch0123' | sed -n 's/.*: //p'); do
   msg2 "Applying patch ${i}..."
@@ -293,14 +295,21 @@ prepare() {
                   --enable SECURITY_APPARMOR \
                   --enable SECURITY_YAMA \
 
-  # AMD
-  scripts/config --enable KVM_COMPAT \
+  # AMD and KVM stuff
+  scripts/config --enable HAVE_KVM \
+                  --enable KVM \
+                  --enable KVM_AMD \
                   --enable KVM_AMD_SEV \
                   --enable DRM_AMD_DC_DCN2_0 \
                   --enable AMD_IOMMU \
                   --enable AMD_IOMMU_V2 \
                   --module GPIO_AMD_FCH \
                   --module NTB_AMD \
+                  --enable INTEL_IOMMU_SVM \
+                  --enable MICROCODE_AMD \
+
+  # Disable full refcount check
+  scripts/config --undefine REFCOUNT_FULL
 
   # ACPI Table Upgrade
   scripts/config --enable ACPI_TABLE_UPGRADE
