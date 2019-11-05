@@ -20,7 +20,7 @@ pkgbase=linux-manjaro-clear
 pkgname=('linux-manjaro-clear' 'linux-manjaro-clear-headers')
 _kernelname=MANJARO-clear
 pkgver=${_major}.${_minor}
-pkgrel=3
+pkgrel=4
 arch=('i686' 'x86_64')
 url="http://www.kernel.org/"
 license=('GPL2')
@@ -311,6 +311,8 @@ prepare() {
                   --module NTB_AMD \
                   --enable INTEL_IOMMU_SVM \
                   --enable MICROCODE_AMD \
+                  --enable AMD_MEM_ENCRYPT \
+                  --enable AMD_NUMA \
 
   # Disable full refcount check
   # This will hide the warning from Nvidia proprietary drivers.
