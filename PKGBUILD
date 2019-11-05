@@ -1,10 +1,13 @@
 # Based on the file created for Arch Linux by:
 # Tobias Powalowski <tpowa@archlinux.org>
 # Thomas Baechler <thomas@archlinux.org>
-
+# This PKGBUILD is based on Manjaro Linux team work especially by:
 # Maintainer: Philip Müller (x86_64) <philm@manjaro.org>
 # Maintainer: Jonathon Fernyhough (i686) <jonathon@manjaro.org>
 # Contributor: Helmut Stult <helmut[at]manjaro[dot]org>
+
+# Maintainer: Rocky Prabowo <rocky@lazycats.id>
+
 _major=5.3
 _minor=8
 _basekernel=${_major}
@@ -15,9 +18,9 @@ _aufs=20190923
 _gcc_more_v='20190822'
 pkgbase=linux-manjaro-clear
 pkgname=('linux-manjaro-clear' 'linux-manjaro-clear-headers')
-_kernelname=-MANJARO-clear
+_kernelname=MANJARO-clear
 pkgver=${_major}.${_minor}
-pkgrel=2
+pkgrel=3
 arch=('i686' 'x86_64')
 url="http://www.kernel.org/"
 license=('GPL2')
@@ -39,8 +42,8 @@ source=("https://www.kernel.org/pub/linux/kernel/v5.x/linux-${_basekernel}.tar.x
         'tmpfs-idr.patch'
         'vfs-ino.patch'
         # ARCH Patches
-        0001-ZEN-Add-sysctl-and-CONFIG-to-disallow-unprivileged-CLONE_NEWUSER.patch
-        0002-bluetooth-fix-assumptions-on-the-return-value-of-hidp_send_message.patch
+        '0001-ZEN-Add-sysctl-and-CONFIG-to-disallow-unprivileged-CLONE_NEWUSER.patch'
+        '0002-bluetooth-fix-assumptions-on-the-return-value-of-hidp_send_message.patch'
         # MANJARO Patches
         '0001-apparmor-patch-to-provide-compatibility-with-v2-net-rules.patch::https://gitlab.com/apparmor/apparmor-kernel/commit/6408dbde30855bb9a2af44c9053ba2329db57c7f.patch'
         '0002-apparmor-af_unix-mediation.patch::https://gitlab.com/apparmor/apparmor-kernel/commit/7a291673471aa583694ee760aa33e5a3f5ae9a9e.patch'
@@ -51,15 +54,15 @@ source=("https://www.kernel.org/pub/linux/kernel/v5.x/linux-${_basekernel}.tar.x
         '0003-v5-xps13-mfd-intel-lpss-use-devm_ioremap_uc-for-MMIO.patch'
         '0004-v5-xps13-docs-driver-model-add-devm_ioremap_uc.patch'
         '0001-nonupstream-navi10-vfio-reset.patch'
-        # clear Patches
+        # clearlinux Patches
         "enable_additional_cpu_optimizations-$_gcc_more_v.tar.gz::https://github.com/graysky2/kernel_gcc_patch/archive/$_gcc_more_v.tar.gz"
         # "clearlinux::git+https://github.com/clearlinux-pkgs/linux.git#tag=${_clr}"
         "clearlinux.tar.gz::https://codeload.github.com/clearlinux-pkgs/linux/tar.gz/${_clr}"
         'add-acs-overrides.patch::https://aur.archlinux.org/cgit/aur.git/plain/add-acs-overrides.patch?h=linux-vfio'
+        #"prepatch-${_basekernel}.patch"
         # My Patches
         "kernel-5.3-nvme-discard-align-to-page-size.patch"
         '0001-drm-amdgpu-Add-DC-feature-mask-to-disable-fractional-pwm.patch'
-        #"prepatch-${_basekernel}.patch"
         # Bootsplash
         '0001-bootsplash.patch'
         '0002-bootsplash.patch'
@@ -74,15 +77,15 @@ source=("https://www.kernel.org/pub/linux/kernel/v5.x/linux-${_basekernel}.tar.x
         '0011-bootsplash.patch'
         '0012-bootsplash.patch'
         '0013-bootsplash.patch'
-       )
+        )
 sha256sums=('78f3c397513cf4ff0f96aa7d09a921d003e08fa97c09e0bb71d88211b40567b2'
             '7225bd200069c7dd4fbae5cfe1c24f4f73939ea5bd213e20ac62771bdc9e7578'
             '2cd4aed40dea452ce36e6a61dcf62d3147ff2c845ac5a56c440e83fd09d9fb8e'
             'f5903377d29fc538af98077b81982efdc091a8c628cb85566e88e1b5018f12bf'
             'b44d81446d8b53d5637287c30ae3eb64cae0078c3fbc45fcf1081dd6699818b5'
-            'd11a113e79a1828b15d7d1198439afa200961c5a4eb836fb60d1f627c3fda118'
+            'd3ec6e33a6377714b4b92c37f358a2fe1cc3eab95c7d7211cd5ee5e19ca1c5ab'
             'ae2e95db94ef7176207c690224169594d49445e04249d2499e9d2fbc117a0b21'
-            '698a597ad5a1f3a6e6d317b87f4f179e48d0c5a828b7799ff7982d3536c55318'
+            'b97c4b7ef01d90de5b5ad3359e6a36c8a2fdcb82c65e70ec8d00533a33d29f1d'
             'fb57bd74a20ca03559fcd3e5418069e9449ccc8629cc6c6812dca468c9d9f797'
             'da26a3800b23a0342b58badf72f708c5e40cf256a7dcc6851fdcab2073888ebf'
             'f6d43c68f35c5fafbb93b6ac13fe9e7fdabf7b134f8c08ebb4a7ec4b4e7d7fb3'
@@ -236,22 +239,23 @@ prepare() {
   cat "${srcdir}/config.aufs" >> ./.config
 
   if [ "${_kernelname}" != "" ]; then
-    sed -i "s|CONFIG_LOCALVERSION=.*|CONFIG_LOCALVERSION=\"${_kernelname}\"|g" ./.config
+    sed -i "s|CONFIG_LOCALVERSION=.*|CONFIG_LOCALVERSION=\"-${_kernelname}\"|g" ./.config
     sed -i "s|CONFIG_LOCALVERSION_AUTO=.*|CONFIG_LOCALVERSION_AUTO=n|" ./.config
   fi
-  # My Patches
+
+  # Custom patches, you might not need this. Comment patches that you don't need.
   # Fix for NVMe IOMMU errors when fstrim/discard is executed: https://bugzilla.kernel.org/show_bug.cgi?id=202665
   patch -Np1 -i "${srcdir}/kernel-5.3-nvme-discard-align-to-page-size.patch"
 
   ### Add Clearlinux patches
   for i in $(grep '^Patch' ${srcdir}/linux-${_clr}/linux.spec | grep -Ev '^Patch0123' | sed -n 's/.*: //p'); do
   msg2 "Applying patch ${i}..."
-  patch -Np1 -i "$srcdir/linux-${_clr}/${i}"
+  patch -Np1 -i "${srcdir}/linux-${_clr}/${i}"
   done
 
   ### Setting config
   msg2 "Setting config..."
-  cp -Tf $srcdir/linux-${_clr}/config ./.config
+  cp -Tf ${srcdir}/linux-${_clr}/config ./.config
 
   ### Enable extra stuff from arch kernel
   msg2 "Enable extra stuff from arch kernel..."
@@ -309,9 +313,12 @@ prepare() {
                   --enable MICROCODE_AMD \
 
   # Disable full refcount check
+  # This will hide the warning from Nvidia proprietary drivers.
+  # Comment the line below to keep the clearlinux default config.
   scripts/config --undefine REFCOUNT_FULL
 
   # ACPI Table Upgrade
+  # Comment this if you don't need DSDT patching capability.
   scripts/config --enable ACPI_TABLE_UPGRADE
 
   make olddefconfig
@@ -320,13 +327,13 @@ prepare() {
   # https://github.com/graysky2/kernel_gcc_patch
   if [ "${_enable_gcc_more_v}" = "y" ]; then
   msg2 "Applying enable_additional_cpu_optimizations_for_gcc_v9.1+_kernel_v4.13+.patch ..."
-  patch -Np1 -i "$srcdir/kernel_gcc_patch-$_gcc_more_v/enable_additional_cpu_optimizations_for_gcc_v9.1+_kernel_v4.13+.patch"
+  patch -Np1 -i "${srcdir}/kernel_gcc_patch-$_gcc_more_v/enable_additional_cpu_optimizations_for_gcc_v9.1+_kernel_v4.13+.patch"
   fi
 
   ### Enable ACS override patch
   if [ "${_enable_acs_override}" = "y" ]; then
   msg2 "Enabling ACS override patch..."
-  patch -Np1 -i "$srcdir/add-acs-overrides.patch"
+  patch -Np1 -i "${srcdir}/add-acs-overrides.patch"
   fi
 
   ### Get kernel version
@@ -359,7 +366,7 @@ prepare() {
   # sed -ri "s|^(PATCHLEVEL =).*|\1 2|" Makefile
 
   # set extraversion to pkgrel
-  sed -ri "s|^(EXTRAVERSION =).*|\1 ${_kernelname}-${pkgrel}|" Makefile
+  sed -ri "s|^(EXTRAVERSION =).*|\1 -${_kernelname}-${pkgrel}|" Makefile
 
   # don't run depmod on 'make install'. We'll do this ourselves in packaging
   sed -i '2iexit 0' scripts/depmod.sh
@@ -379,7 +386,7 @@ prepare() {
   yes "" | make config >/dev/null
 
   ### Save configuration for later reuse
-  cp -Tf ./.config "${startdir}/config-${pkgver}-${pkgrel}${_kernelname}"
+  cp -Tf ./.config "${startdir}/config-${pkgver}-${pkgrel}-${_kernelname}"
 }
 
 build() {
@@ -407,17 +414,17 @@ package_linux-manjaro-clear() {
   mkdir -p "${pkgdir}"/{boot,usr/lib/modules}
   make LOCALVERSION= INSTALL_MOD_PATH="${pkgdir}/usr" modules_install
   # cp arch/$KARCH/boot/bzImage "${pkgdir}/boot/vmlinuz-${_basekernel}-${CARCH}"
-  cp arch/$KARCH/boot/bzImage "${pkgdir}/boot/vmlinuz-${_basekernel}${_kernelname}-${CARCH}"
+  cp arch/$KARCH/boot/bzImage "${pkgdir}/boot/vmlinuz-${_basekernel}-${_kernelname}-${CARCH}"
 
   # add kernel version
   if [ "${CARCH}" = "x86_64" ]; then
-     echo "${pkgver}-${pkgrel}-MANJARO-clear x64" > "${pkgdir}/boot/${pkgbase}-${CARCH}.kver"
+     echo "${pkgver}-${pkgrel}-${_kernelname} x64" > "${pkgdir}/boot/${pkgbase}-${CARCH}.kver"
   else
-     echo "${pkgver}-${pkgrel}-MANJARO-clear x32" > "${pkgdir}/boot/${pkgbase}-${CARCH}.kver"
+     echo "${pkgver}-${pkgrel}-${_kernelname} x32" > "${pkgdir}/boot/${pkgbase}-${CARCH}.kver"
   fi
 
   # make room for external modules
-  local _extramodules="extramodules-${_basekernel}${_kernelname:--MANJARO}"
+  local _extramodules="extramodules-${_basekernel}-${_kernelname:--MANJARO}"
   ln -s "../${_extramodules}" "${pkgdir}/usr/lib/modules/${_kernver}/extramodules"
 
   # add real version for building modules and running depmod from hook
@@ -448,7 +455,7 @@ package_linux-manjaro-clear() {
   true && install=${install}.pkg
 
   # install mkinitcpio preset file
-  sed "${_subst}" ${srcdir}/linux-manjaro-clear.preset |
+  sed "${_subst}" ${srcdir}/${pkgbase}.preset |
     install -Dm644 /dev/stdin "${pkgdir}/etc/mkinitcpio.d/${pkgbase}.preset"
 
   # install pacman hooks
