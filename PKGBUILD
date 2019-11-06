@@ -230,19 +230,6 @@ prepare() {
   patch -Np1 -i "${srcdir}/tmpfs-idr.patch"
   patch -Np1 -i "${srcdir}/vfs-ino.patch"
 
-  if [ "${CARCH}" = "x86_64" ]; then
-    cat "${srcdir}/config.x86_64" > ./.config
-  else
-    cat "${srcdir}/config" > ./.config
-  fi
-
-  cat "${srcdir}/config.aufs" >> ./.config
-
-  if [ "${_kernelname}" != "" ]; then
-    sed -i "s|CONFIG_LOCALVERSION=.*|CONFIG_LOCALVERSION=\"-${_kernelname}\"|g" ./.config
-    sed -i "s|CONFIG_LOCALVERSION_AUTO=.*|CONFIG_LOCALVERSION_AUTO=n|" ./.config
-  fi
-
   # Custom patches, you might not need this. Comment patches that you don't need.
   # Fix for NVMe IOMMU errors when fstrim/discard is executed: https://bugzilla.kernel.org/show_bug.cgi?id=202665
   patch -Np1 -i "${srcdir}/kernel-5.3-nvme-discard-align-to-page-size.patch"
@@ -257,20 +244,27 @@ prepare() {
   msg2 "Setting config..."
   cp -Tf ${srcdir}/linux-${_clr}/config ./.config
 
+  if [ "${CARCH}" = "x86_64" ]; then
+    cat "${srcdir}/config.x86_64" > ./.config
+  else
+    cat "${srcdir}/config" > ./.config
+  fi
+
+  cat "${srcdir}/config.aufs" >> ./.config
+
+  if [ "${_kernelname}" != "" ]; then
+    sed -i "s|CONFIG_LOCALVERSION=.*|CONFIG_LOCALVERSION=\"-${_kernelname}\"|g" ./.config
+    sed -i "s|CONFIG_LOCALVERSION_AUTO=.*|CONFIG_LOCALVERSION_AUTO=n|" ./.config
+  fi
+
   ### Enable extra stuff from arch kernel
   msg2 "Enable extra stuff from arch kernel..."
 
   scripts/config --undefine MODULE_SIG_FORCE \
                   --enable MODULE_COMPRESS \
-                  --enable-after MODULE_COMPRESS MODULE_COMPRESS_XZ \
+                  --enable-after MODULE_COMPRESS MODULE_COMPRESS_LZO \
                   --enable DELL_SMBIOS_SMM \
-                  --module IKCONFIG \
-                  --enable-after IKCONFIG IKCONFIG_PROC \
-                  --enable-after SOUND SOUND_OSS_CORE \
                   --enable SND_OSSEMUL \
-                  --module-after SND_OSSEMUL SND_MIXER_OSS \
-                  --module-after SND_MIXER_OSS SND_PCM_OSS \
-                  --enable-after SND_PCM_OSS SND_PCM_OSS_PLUGINS
 
   # Scheduler features
   scripts/config --undefine RT_GROUP_SCHED
@@ -290,11 +284,6 @@ prepare() {
 
   # Security options
   scripts/config --enable SECURITY_SELINUX \
-                  --enable-after SECURITY_SELINUX SECURITY_SELINUX_BOOTPARAM \
-                  --enable SECURITY_SMACK \
-                  --enable-after SECURITY_SMACK SECURITY_SMACK_BRINGUP \
-                  --enable-after SECURITY_SMACK_BRINGUP SECURITY_SMACK_NETFILTER \
-                  --enable-after SECURITY_SMACK_NETFILTER SECURITY_SMACK_APPEND_SIGNALS \
                   --enable SECURITY_TOMOYO \
                   --enable SECURITY_APPARMOR \
                   --enable SECURITY_YAMA \
@@ -309,7 +298,6 @@ prepare() {
                   --enable AMD_IOMMU_V2 \
                   --module GPIO_AMD_FCH \
                   --module NTB_AMD \
-                  --enable INTEL_IOMMU_SVM \
                   --enable MICROCODE_AMD \
                   --enable AMD_MEM_ENCRYPT \
                   --enable AMD_NUMA \
