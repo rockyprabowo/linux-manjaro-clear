@@ -29,7 +29,7 @@ options=('!strip')
 source=("https://www.kernel.org/pub/linux/kernel/v5.x/linux-${_basekernel}.tar.xz"
         "https://www.kernel.org/pub/linux/kernel/v5.x/patch-${pkgver}.xz"
         # the main kernel config files
-        'config.x86_64' 'config' 'config.aufs'
+        'config.x86_64' 'config' 'config.aufs' 'config.new'
         "${pkgbase}.preset" # standard config files for mkinitcpio ramdisk
         '60-linux.hook'     # pacman hook for depmod
         '90-linux.hook'     # pacman hook for initramfs regeneration
@@ -83,6 +83,7 @@ sha256sums=('78f3c397513cf4ff0f96aa7d09a921d003e08fa97c09e0bb71d88211b40567b2'
             '2cd4aed40dea452ce36e6a61dcf62d3147ff2c845ac5a56c440e83fd09d9fb8e'
             'f5903377d29fc538af98077b81982efdc091a8c628cb85566e88e1b5018f12bf'
             'b44d81446d8b53d5637287c30ae3eb64cae0078c3fbc45fcf1081dd6699818b5'
+            '208f39df21ca3490d9158322b73aa084177cc28cfaadec616139d50ac9239bb9'
             'd3ec6e33a6377714b4b92c37f358a2fe1cc3eab95c7d7211cd5ee5e19ca1c5ab'
             'ae2e95db94ef7176207c690224169594d49445e04249d2499e9d2fbc117a0b21'
             'b97c4b7ef01d90de5b5ad3359e6a36c8a2fdcb82c65e70ec8d00533a33d29f1d'
@@ -242,14 +243,16 @@ prepare() {
 
   ### Setting config
   msg2 "Setting config..."
-  cp -Tf ${srcdir}/linux-${_clr}/config ./.config
+  # cp -Tf ${srcdir}/linux-${_clr}/config ${srcdir}/config.clear
 
-  if [ "${CARCH}" = "x86_64" ]; then
-    cat "${srcdir}/config.x86_64" > ./.config
-  else
-    cat "${srcdir}/config" > ./.config
-  fi
+  # if [ "${CARCH}" = "x86_64" ]; then
+  #   cat "${srcdir}/config.x86_64" > ./.config
+  # else
+  #   cat "${srcdir}/config" > ./.config
+  # fi
 
+  # scripts/kconfig/merge_config.sh -m "${srcdir}/config.x86_64" "${srcdir}/config.clear"
+  cat "${srcdir}/config.new" >> ./.config
   cat "${srcdir}/config.aufs" >> ./.config
 
   if [ "${_kernelname}" != "" ]; then
@@ -261,10 +264,7 @@ prepare() {
   msg2 "Enable extra stuff from arch kernel..."
 
   scripts/config --undefine MODULE_SIG_FORCE \
-                  --enable MODULE_COMPRESS \
-                  --enable-after MODULE_COMPRESS MODULE_COMPRESS_LZO \
                   --enable DELL_SMBIOS_SMM \
-                  --enable SND_OSSEMUL \
 
   # Scheduler features
   scripts/config --undefine RT_GROUP_SCHED
@@ -283,24 +283,20 @@ prepare() {
   scripts/config --enable FRAMEBUFFER_CONSOLE_DEFERRED_TAKEOVER
 
   # Security options
-  scripts/config --enable SECURITY_SELINUX \
-                  --enable SECURITY_TOMOYO \
+  scripts/config --enable SECURITY_TOMOYO \
                   --enable SECURITY_APPARMOR \
                   --enable SECURITY_YAMA \
 
   # AMD and KVM stuff
-  scripts/config --enable HAVE_KVM \
-                  --enable KVM \
-                  --enable KVM_AMD \
-                  --enable KVM_AMD_SEV \
-                  --enable DRM_AMD_DC_DCN2_0 \
-                  --enable AMD_IOMMU \
-                  --enable AMD_IOMMU_V2 \
-                  --module GPIO_AMD_FCH \
-                  --module NTB_AMD \
-                  --enable MICROCODE_AMD \
-                  --enable AMD_MEM_ENCRYPT \
-                  --enable AMD_NUMA \
+  scripts/config --enable HAVE_KVM
+  scripts/config --enable KVM
+  scripts/config --enable KVM_AMD
+  scripts/config --enable DRM_AMD_DC_DCN2_0
+  scripts/config --enable AMD_IOMMU
+  scripts/config --enable AMD_IOMMU_V2
+  scripts/config --module GPIO_AMD_FCH
+  scripts/config --module NTB_AMD
+  scripts/config --enable MICROCODE_AMD
 
   # Disable full refcount check
   # This will hide the warning from Nvidia proprietary drivers.
