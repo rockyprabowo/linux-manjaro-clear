@@ -13,9 +13,12 @@ _minor=8
 _basekernel=${_major}
 _basever=${_major/./}
 _srcname=linux-${_major}
-_clr=${_major}.8-854
+_clr=${_major}.${_minor}-859
 _aufs=20190923
 _gcc_more_v='20190822'
+_enable_gcc_more_v='y'
+_makenconfig=
+
 pkgbase=linux-manjaro-clear
 pkgname=('linux-manjaro-clear' 'linux-manjaro-clear-headers')
 _kernelname=MANJARO-clear
@@ -24,7 +27,7 @@ pkgrel=4
 arch=('i686' 'x86_64')
 url="http://www.kernel.org/"
 license=('GPL2')
-makedepends=('xmlto' 'docbook-xsl' 'kmod' 'inetutils' 'bc' 'elfutils' 'git')
+makedepends=('bc' 'cpio' 'git' 'inetutils' 'kmod' 'libelf' 'xmlto')
 options=('!strip')
 source=("https://www.kernel.org/pub/linux/kernel/v5.x/linux-${_basekernel}.tar.xz"
         "https://www.kernel.org/pub/linux/kernel/v5.x/patch-${pkgver}.xz"
@@ -57,7 +60,7 @@ source=("https://www.kernel.org/pub/linux/kernel/v5.x/linux-${_basekernel}.tar.x
         # clearlinux Patches
         "enable_additional_cpu_optimizations-$_gcc_more_v.tar.gz::https://github.com/graysky2/kernel_gcc_patch/archive/$_gcc_more_v.tar.gz"
         # "clearlinux::git+https://github.com/clearlinux-pkgs/linux.git#tag=${_clr}"
-        "clearlinux.tar.gz::https://codeload.github.com/clearlinux-pkgs/linux/tar.gz/${_clr}"
+        "clearlinux-${_clr}.tar.gz::https://codeload.github.com/clearlinux-pkgs/linux/tar.gz/${_clr}"
         'add-acs-overrides.patch::https://aur.archlinux.org/cgit/aur.git/plain/add-acs-overrides.patch?h=linux-vfio'
         #"prepatch-${_basekernel}.patch"
         # My Patches
@@ -83,7 +86,7 @@ sha256sums=('78f3c397513cf4ff0f96aa7d09a921d003e08fa97c09e0bb71d88211b40567b2'
             '2cd4aed40dea452ce36e6a61dcf62d3147ff2c845ac5a56c440e83fd09d9fb8e'
             'f5903377d29fc538af98077b81982efdc091a8c628cb85566e88e1b5018f12bf'
             'b44d81446d8b53d5637287c30ae3eb64cae0078c3fbc45fcf1081dd6699818b5'
-            '6405896a9b179b0e24879b3deef900e5fffbfc5126d6bfa91858638855f88f1b'
+            'e2e641b2afd9310766caff0947e60cba36f2a0a349206e65a37b841bd6315c38'
             'd3ec6e33a6377714b4b92c37f358a2fe1cc3eab95c7d7211cd5ee5e19ca1c5ab'
             'ae2e95db94ef7176207c690224169594d49445e04249d2499e9d2fbc117a0b21'
             'b97c4b7ef01d90de5b5ad3359e6a36c8a2fdcb82c65e70ec8d00533a33d29f1d'
@@ -107,7 +110,7 @@ sha256sums=('78f3c397513cf4ff0f96aa7d09a921d003e08fa97c09e0bb71d88211b40567b2'
             'e82c72cd391261e79ae25330848877c451b4fa60cabed9c16898983eab269c89'
             '7a2758f86dd1339f0f1801de2dbea059b55bf3648e240878b11e6d6890d3089c'
             '8c11086809864b5cef7d079f930bd40da8d0869c091965fa62e95de9a0fe13b5'
-            'ba1e418844268e01bb63752d8d6774cdf9d528f16b94a921cc4980456a78cf55'
+            '5f5b2b84c7ce24b40f5ea91c5e5fd4eb02a0f08613d39b040167343acc80277f'
             'dbf4ac4b873ce6972e63b78d74ddba18f2701716163bb7f4b4fe5e909346a6e1'
             'd3d5e11d78ba5652281714deb12aefe725852b18552ef710d244844a38af0373'
             '5b38d1666d51f8863117ec1d107d3f1c68a57e2b2ab44da1a7da10cbfc7f8ef3'
@@ -166,6 +169,10 @@ sha256sums=('78f3c397513cf4ff0f96aa7d09a921d003e08fa97c09e0bb71d88211b40567b2'
 #  31. Native optimizations autodetected by GCC (MNATIVE)
 _subarch=31
 
+export KBUILD_BUILD_HOST=$HOST
+export KBUILD_BUILD_USER=$pkgbase
+export KBUILD_BUILD_TIMESTAMP="$(date -Ru${SOURCE_DATE_EPOCH:+d @$SOURCE_DATE_EPOCH})"
+
 prepare() {
   cd "${srcdir}/linux-${_basekernel}"
 
@@ -179,7 +186,6 @@ prepare() {
 
   # disable USER_NS for non-root users by default
   patch -Np1 -i ../0001-ZEN-Add-sysctl-and-CONFIG-to-disallow-unprivileged-CLONE_NEWUSER.patch
-
   patch -Np1 -i ../0002-bluetooth-fix-assumptions-on-the-return-value-of-hidp_send_message.patch
 
   # add patches for snapd
@@ -236,9 +242,9 @@ prepare() {
   patch -Np1 -i "${srcdir}/kernel-5.3-nvme-discard-align-to-page-size.patch"
 
   ### Add Clearlinux patches
-  for i in $(grep '^Patch' ${srcdir}/linux-${_clr}/linux.spec | grep -Ev '^Patch0123' | sed -n 's/.*: //p'); do
-  msg2 "Applying patch ${i}..."
-  patch -Np1 -i "${srcdir}/linux-${_clr}/${i}"
+  for i in $(grep '^Patch' ${srcdir}/linux-${_clr}/linux.spec | grep -Ev '^Patch0123|^Patch0130|^Patch0073' | sed -n 's/.*: //p'); do
+    msg2 "Applying patch ${i}..."
+    patch -Np1 -i "${srcdir}/linux-${_clr}/${i}"
   done
 
   ### Setting config
@@ -252,13 +258,15 @@ prepare() {
   # fi
 
   # scripts/kconfig/merge_config.sh -m "${srcdir}/config.x86_64" "${srcdir}/config.clear"
-  cat "${srcdir}/config.new" >> ./.config
+  cat "${srcdir}/config.new" > ./.config
+  read -p "Paused. Press any key to continue"
   cat "${srcdir}/config.aufs" >> ./.config
 
   if [ "${_kernelname}" != "" ]; then
     sed -i "s|CONFIG_LOCALVERSION=.*|CONFIG_LOCALVERSION=\"-${_kernelname}\"|g" ./.config
     sed -i "s|CONFIG_LOCALVERSION_AUTO=.*|CONFIG_LOCALVERSION_AUTO=n|" ./.config
   fi
+
 
   ### Enable extra stuff from arch kernel
   msg2 "Enable extra stuff from arch kernel..."
@@ -268,6 +276,10 @@ prepare() {
 
   # Scheduler features
   scripts/config --undefine RT_GROUP_SCHED
+
+  # Networking support
+  scripts/config --enable NETFILTER_INGRESS \
+                  --module NET_SCH_CAKE
 
   # Queueing/Scheduling
   scripts/config --module NET_SCH_CAKE
@@ -288,15 +300,15 @@ prepare() {
                   --enable SECURITY_YAMA \
 
   # AMD and KVM stuff
-  scripts/config --enable HAVE_KVM
-  scripts/config --enable KVM
-  scripts/config --enable KVM_AMD
-  scripts/config --enable DRM_AMD_DC_DCN2_0
-  scripts/config --enable AMD_IOMMU
-  scripts/config --enable AMD_IOMMU_V2
-  scripts/config --module GPIO_AMD_FCH
-  scripts/config --module NTB_AMD
-  scripts/config --enable MICROCODE_AMD
+  scripts/config --enable HAVE_KVM \
+                --enable KVM \
+                --enable KVM_AMD \
+                --enable DRM_AMD_DC_DCN2_0 \
+                --enable AMD_IOMMU \
+                --enable AMD_IOMMU_V2 \
+                --module GPIO_AMD_FCH \
+                --module NTB_AMD \
+                --enable MICROCODE_AMD \
 
   # Disable full refcount check
   # This will hide the warning from Nvidia proprietary drivers.
@@ -312,26 +324,22 @@ prepare() {
   ### Patch source to unlock additional gcc CPU optimizations
   # https://github.com/graysky2/kernel_gcc_patch
   if [ "${_enable_gcc_more_v}" = "y" ]; then
-  msg2 "Applying enable_additional_cpu_optimizations_for_gcc_v9.1+_kernel_v4.13+.patch ..."
-  patch -Np1 -i "${srcdir}/kernel_gcc_patch-$_gcc_more_v/enable_additional_cpu_optimizations_for_gcc_v9.1+_kernel_v4.13+.patch"
+    msg2 "Applying enable_additional_cpu_optimizations_for_gcc_v9.1+_kernel_v4.13+.patch ..."
+    patch -Np1 -i "${srcdir}/kernel_gcc_patch-$_gcc_more_v/enable_additional_cpu_optimizations_for_gcc_v9.1+_kernel_v4.13+.patch"
   fi
 
   ### Enable ACS override patch
   if [ "${_enable_acs_override}" = "y" ]; then
-  msg2 "Enabling ACS override patch..."
-  patch -Np1 -i "${srcdir}/add-acs-overrides.patch"
+    msg2 "Enabling ACS override patch..."
+    patch -Np1 -i "${srcdir}/add-acs-overrides.patch"
   fi
 
   ### Get kernel version
   if [ "${_enable_gcc_more_v}" = "y" ] || [ -n "${_subarch}" ]; then
-  yes "$_subarch" | make oldconfig
-  else
-  make prepare
+    yes "$_subarch" | make oldconfig
+  # else
+  #   make prepare
   fi
-
-  ### Prepared version
-  make -s kernelrelease > version
-  msg2 "Prepared %s version %s" "$pkgbase" "$(<version)"
 
   ### Optionally load needed modules for the make localmodconfig
   # See https://aur.archlinux.org/packages/modprobed-db
@@ -345,8 +353,12 @@ prepare() {
     fi
   fi
 
+  ### Prepared version
+  make -s kernelrelease > version
+  msg2 "Prepared %s version %s" "$pkgbase" "$(<version)"
+
   ### do not run `make olddefconfig` as it sets default options
-  yes "" | make config >/dev/null
+  # yes "" | make config >/dev/null
 
   # set patchlevel to 2
   # sed -ri "s|^(PATCHLEVEL =).*|\1 2|" Makefile
@@ -357,8 +369,7 @@ prepare() {
   # don't run depmod on 'make install'. We'll do this ourselves in packaging
   sed -i '2iexit 0' scripts/depmod.sh
 
-  # get kernel version
-  make prepare
+  [[ -z "$_makenconfig" ]] || make nconfig
 
   # load configuration
   # Configure the kernel. Replace the line below with one of your choice.
