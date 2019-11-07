@@ -259,7 +259,7 @@ prepare() {
 
   # scripts/kconfig/merge_config.sh -m "${srcdir}/config.x86_64" "${srcdir}/config.clear"
   cat "${srcdir}/config.new" > ./.config
-  read -p "Paused. Press any key to continue"
+  # read -p "Paused. Press any key to continue"
   cat "${srcdir}/config.aufs" >> ./.config
 
   if [ "${_kernelname}" != "" ]; then
@@ -522,14 +522,18 @@ package_linux-manjaro-clear-headers() {
   chmod -R u=rwX,go=rX "${_builddir}"
 
   # strip scripts directory
-  local _binary _strip
+  local _binary
   while read -rd '' _binary; do
     case "$(file -bi "${_binary}")" in
-      *application/x-sharedlib*)  _strip="${STRIP_SHARED}"   ;; # Libraries (.so)
-      *application/x-archive*)    _strip="${STRIP_STATIC}"   ;; # Libraries (.a)
-      *application/x-executable*) _strip="${STRIP_BINARIES}" ;; # Binaries
+      application/x-sharedlib\;*)      # Libraries (.so)
+          strip -v $STRIP_SHARED "${_binary}" ;;
+      application/x-archive\;*)        # Libraries (.a)
+          strip -v $STRIP_STATIC "${_binary}" ;;
+      application/x-executable\;*)     # Binaries
+          strip -v $STRIP_BINARIES "${_binary}" ;;
+      application/x-pie-executable\;*) # Relocatable binaries
+          strip -v $STRIP_SHARED "${_binary}" ;;
       *) continue ;;
     esac
-    /usr/bin/strip ${_strip} "${_binary}"
   done < <(find "${_builddir}/scripts" -type f -perm -u+w -print0 2>/dev/null)
 }
