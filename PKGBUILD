@@ -86,7 +86,7 @@ sha256sums=('78f3c397513cf4ff0f96aa7d09a921d003e08fa97c09e0bb71d88211b40567b2'
             '2cd4aed40dea452ce36e6a61dcf62d3147ff2c845ac5a56c440e83fd09d9fb8e'
             'f5903377d29fc538af98077b81982efdc091a8c628cb85566e88e1b5018f12bf'
             'b44d81446d8b53d5637287c30ae3eb64cae0078c3fbc45fcf1081dd6699818b5'
-            '8cb7cebe5d92c887146785e46da8f049292080c08a3d27fb5f9a655f5e98b0ca'
+            'bea2ed7d92ff0799d86c264348011c328f5a55157dcf1add6dae1c200ae239a7'
             'd3ec6e33a6377714b4b92c37f358a2fe1cc3eab95c7d7211cd5ee5e19ca1c5ab'
             'ae2e95db94ef7176207c690224169594d49445e04249d2499e9d2fbc117a0b21'
             'b97c4b7ef01d90de5b5ad3359e6a36c8a2fdcb82c65e70ec8d00533a33d29f1d'
@@ -271,33 +271,36 @@ prepare() {
   ### Enable extra stuff from arch kernel
   msg2 "Enable extra stuff from arch kernel..."
 
-  scripts/config --undefine MODULE_SIG_FORCE \
-                  --enable DELL_SMBIOS_SMM \
+  # General setup
+  scripts/config --undefine RT_GROUP_SCHED \
+              --enable GCC_PLUGIN_STRUCTLEAK_BYREF_ALL
 
-  # Scheduler features
-  scripts/config --undefine RT_GROUP_SCHED
+  # Power management and ACPI options
+  scripts/config --enable ACPI_REV_OVERRIDE_POSSIBLE  \
+                  --enable HIBERNATION
+
+  # Enable loadable module support
+  scripts/config --undefine MODULE_SIG_FORCE \
+                  --enable MODULE_COMPRESS \
+                  --enable-after MODULE_COMPRESS MODULE_COMPRESS_LZO
 
   # Networking support
   scripts/config --enable NETFILTER_INGRESS \
                   --module NET_SCH_CAKE
 
-  # Queueing/Scheduling
-  scripts/config --module NET_SCH_CAKE
-
-  # PATA SFF controllers with BMDMA
-  scripts/config --module PATA_JMICRON
-
-  # Power management and ACPI options
-  scripts/config --enable ACPI_REV_OVERRIDE_POSSIBLE \
-                  --enable HIBERNATION
-
-  # Console display driver support
-  scripts/config --enable FRAMEBUFFER_CONSOLE_DEFERRED_TAKEOVER
+  # Device Drivers
+  scripts/config --enable FRAMEBUFFER_CONSOLE_DEFERRED_TAKEOVER \
+                  --enable DELL_SMBIOS_SMM \
+                  --module PATA_JMICRON \
+                  --enable SND_OSSEMUL \
+                  --module-after SND_OSSEMUL SND_MIXER_OSS \
+                  --module-after SND_MIXER_OSS SND_PCM_OSS \
+                  --enable-after SND_PCM_OSS SND_PCM_OSS_PLUGINS
 
   # Security options
   scripts/config --enable SECURITY_TOMOYO \
                   --enable SECURITY_APPARMOR \
-                  --enable SECURITY_YAMA \
+                  --enable SECURITY_YAMA
 
   # AMD and KVM stuff
   scripts/config --enable HAVE_KVM \
