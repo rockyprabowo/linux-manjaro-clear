@@ -9,11 +9,12 @@
 # Maintainer: Rocky Prabowo <rocky@lazycats.id>
 
 _major=5.3
-_minor=8
+_minor=10
 _basekernel=${_major}
 _basever=${_major/./}
 _srcname=linux-${_major}
-_clr=${_major}.${_minor}-859
+#_clr=${_major}.${_minor}-859
+_clr=5.3.9-863
 _aufs=20190923
 _gcc_more_v='20190822'
 _enable_gcc_more_v='y'
@@ -23,19 +24,17 @@ pkgbase=linux-manjaro-clear
 pkgname=('linux-manjaro-clear' 'linux-manjaro-clear-headers')
 _kernelname=MANJARO-clear
 pkgver=${_major}.${_minor}
-pkgrel=4
+pkgrel=1
 arch=('i686' 'x86_64')
 url="http://www.kernel.org/"
 license=('GPL2')
-makedepends=('bc' 'cpio' 'git' 'inetutils' 'kmod' 'libelf' 'xmlto')
+makedepends=('bc' 'cpio' 'docbook-xsl' 'git' 'inetutils' 'kmod' 'libelf' 'xmlto')
 options=('!strip')
 source=("https://www.kernel.org/pub/linux/kernel/v5.x/linux-${_basekernel}.tar.xz"
         "https://www.kernel.org/pub/linux/kernel/v5.x/patch-${pkgver}.xz"
         # the main kernel config files
         'config.x86_64' 'config' 'config.aufs' 'config.new'
-        "${pkgbase}.preset" # standard config files for mkinitcpio ramdisk
-        '60-linux.hook'     # pacman hook for depmod
-        '90-linux.hook'     # pacman hook for initramfs regeneration
+        # AUFS Patches
         "aufs5.3-${_aufs}.patch"
         'aufs5-base.patch'
         'aufs5-kbuild.patch'
@@ -79,17 +78,13 @@ source=("https://www.kernel.org/pub/linux/kernel/v5.x/linux-${_basekernel}.tar.x
         '0010-bootsplash.patch'
         '0011-bootsplash.patch'
         '0012-bootsplash.patch'
-        '0013-bootsplash.patch'
-        )
+        '0013-bootsplash.patch')
 sha256sums=('78f3c397513cf4ff0f96aa7d09a921d003e08fa97c09e0bb71d88211b40567b2'
-            '7225bd200069c7dd4fbae5cfe1c24f4f73939ea5bd213e20ac62771bdc9e7578'
-            '2cd4aed40dea452ce36e6a61dcf62d3147ff2c845ac5a56c440e83fd09d9fb8e'
+            '4c0304c4ac05105881c7f50463a1485a71c0a5899830f07eac0321f32ae4eb4a'
+            '41f6c4f0445ec055db9d441d2856675e7d2f32bdf2ed8fed407f69b45bbad22b'
             'f5903377d29fc538af98077b81982efdc091a8c628cb85566e88e1b5018f12bf'
             'b44d81446d8b53d5637287c30ae3eb64cae0078c3fbc45fcf1081dd6699818b5'
-            'bea2ed7d92ff0799d86c264348011c328f5a55157dcf1add6dae1c200ae239a7'
-            'd3ec6e33a6377714b4b92c37f358a2fe1cc3eab95c7d7211cd5ee5e19ca1c5ab'
-            'ae2e95db94ef7176207c690224169594d49445e04249d2499e9d2fbc117a0b21'
-            'b97c4b7ef01d90de5b5ad3359e6a36c8a2fdcb82c65e70ec8d00533a33d29f1d'
+            '84952f5ec70729f77c5fba583b0d58f108de96816060cc93b733176305f29488'
             'fb57bd74a20ca03559fcd3e5418069e9449ccc8629cc6c6812dca468c9d9f797'
             'da26a3800b23a0342b58badf72f708c5e40cf256a7dcc6851fdcab2073888ebf'
             'f6d43c68f35c5fafbb93b6ac13fe9e7fdabf7b134f8c08ebb4a7ec4b4e7d7fb3'
@@ -110,7 +105,7 @@ sha256sums=('78f3c397513cf4ff0f96aa7d09a921d003e08fa97c09e0bb71d88211b40567b2'
             'e82c72cd391261e79ae25330848877c451b4fa60cabed9c16898983eab269c89'
             '7a2758f86dd1339f0f1801de2dbea059b55bf3648e240878b11e6d6890d3089c'
             '8c11086809864b5cef7d079f930bd40da8d0869c091965fa62e95de9a0fe13b5'
-            '5f5b2b84c7ce24b40f5ea91c5e5fd4eb02a0f08613d39b040167343acc80277f'
+            '07466e74fc3280e8a1f7a1c81861c9a4a745367bfb8fe0befd15e7cb9b02af6d'
             'dbf4ac4b873ce6972e63b78d74ddba18f2701716163bb7f4b4fe5e909346a6e1'
             'd3d5e11d78ba5652281714deb12aefe725852b18552ef710d244844a38af0373'
             '5b38d1666d51f8863117ec1d107d3f1c68a57e2b2ab44da1a7da10cbfc7f8ef3'
@@ -267,9 +262,8 @@ prepare() {
     sed -i "s|CONFIG_LOCALVERSION_AUTO=.*|CONFIG_LOCALVERSION_AUTO=n|" ./.config
   fi
 
-
-  ### Enable extra stuff from arch kernel
-  msg2 "Enable extra stuff from arch kernel..."
+  ### Enable extra stuff from Arch and Manjaro kernel
+  msg2 "Enable extra stuff from Arch and Manjaro kernel..."
 
   # General setup
   scripts/config --undefine RT_GROUP_SCHED \
@@ -374,6 +368,9 @@ prepare() {
 
   [[ -z "$_makenconfig" ]] || make nconfig
 
+  # get kernel version
+  make prepare
+
   # load configuration
   # Configure the kernel. Replace the line below with one of your choice.
   #make menuconfig # CLI menu for configuration
@@ -398,11 +395,9 @@ build() {
 
 package_linux-manjaro-clear() {
   pkgdesc="The ${pkgbase/linux/Linux} kernel and modules"
-  depends=('coreutils' 'linux-firmware' 'kmod' 'mkinitcpio>=0.7')
+  depends=('coreutils' 'linux-firmware' 'kmod' 'mkinitcpio>=27')
   optdepends=('crda: to set the correct wireless channels of your country')
   provides=("linux-clear=${pkgver}")
-  backup=("etc/mkinitcpio.d/${pkgbase}.preset")
-  install=${pkgname}.install
 
   cd "${srcdir}/linux-${_basekernel}"
 
@@ -413,8 +408,14 @@ package_linux-manjaro-clear() {
 
   mkdir -p "${pkgdir}"/{boot,usr/lib/modules}
   make LOCALVERSION= INSTALL_MOD_PATH="${pkgdir}/usr" modules_install
-  # cp arch/$KARCH/boot/bzImage "${pkgdir}/boot/vmlinuz-${_basekernel}-${CARCH}"
-  cp arch/$KARCH/boot/bzImage "${pkgdir}/boot/vmlinuz-${_basekernel}-${_kernelname}-${CARCH}"
+
+  # systemd expects to find the kernel here to allow hibernation
+  # https://github.com/systemd/systemd/commit/edda44605f06a41fb86b7ab8128dcf99161d2344
+  cp arch/$KARCH/boot/bzImage "${pkgdir}/usr/lib/modules/${_kernver}/vmlinuz"
+
+  # Used by mkinitcpio to name the kernel
+  echo "${pkgbase}" | install -Dm644 /dev/stdin "${pkgdir}/usr/lib/modules/${_kernver}/pkgbase"
+  echo "${_basekernel}-${CARCH}" | install -Dm644 /dev/stdin "${pkgdir}/usr/lib/modules/${_kernver}/kernelbase"
 
   # add kernel version
   if [ "${CARCH}" = "x86_64" ]; then
@@ -439,30 +440,6 @@ package_linux-manjaro-clear() {
 
   # add vmlinux
   install -Dt "${pkgdir}/usr/lib/modules/${_kernver}/build" -m644 vmlinux
-
-  # sed expression for following substitutions
-  local _subst="
-    s|%PKGBASE%|${pkgbase}|g
-    s|%BASEKERNEL%|${_basekernel}|g
-    s|%KERNELNAME%|${_kernelname}|g
-    s|%ARCH%|${CARCH}|g
-    s|%KERNVER%|${_kernver}|g
-    s|%EXTRAMODULES%|${_extramodules}|g
-  "
-
-  # hack to allow specifying an initially nonexisting install file
-  sed "${_subst}" "${startdir}/${install}" > "${startdir}/${install}.pkg"
-  true && install=${install}.pkg
-
-  # install mkinitcpio preset file
-  sed "${_subst}" ${srcdir}/${pkgbase}.preset |
-    install -Dm644 /dev/stdin "${pkgdir}/etc/mkinitcpio.d/${pkgbase}.preset"
-
-  # install pacman hooks
-  sed "${_subst}" ${srcdir}/60-linux.hook |
-    install -Dm644 /dev/stdin "${pkgdir}/usr/share/libalpm/hooks/60-${pkgbase}.hook"
-  sed "${_subst}" ${srcdir}/90-linux.hook |
-    install -Dm644 /dev/stdin "${pkgdir}/usr/share/libalpm/hooks/90-${pkgbase}.hook"
 }
 
 package_linux-manjaro-clear-headers() {
