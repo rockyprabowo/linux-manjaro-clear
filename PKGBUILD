@@ -1,12 +1,13 @@
 # Based on the file created for Arch Linux by:
 # Tobias Powalowski <tpowa@archlinux.org>
 # Thomas Baechler <thomas@archlinux.org>
+#
 # This PKGBUILD is based on Manjaro Linux team work especially by:
 # Maintainer: Philip Müller (x86_64) <philm@manjaro.org>
 # Maintainer: Jonathon Fernyhough (i686) <jonathon@manjaro.org>
 # Contributor: Helmut Stult <helmut[at]manjaro[dot]org>
-
-# Maintainer: Rocky Prabowo <rocky@lazycats.id>
+#
+# Made by Rocky Prabowo <rocky@lazycats.id>
 
 # Optionally select a sub architecture by number if building in a clean chroot
 # Leaving this entry blank will require user interaction during the build
@@ -75,7 +76,8 @@ source=(
         # [BASE] Main release
         "https://www.kernel.org/pub/linux/kernel/v5.x/linux-${_basekernel}.tar.xz"
         # [END OF BASE]
-        # [PATCH-0] Minor release and stable release queue (disabled by default)
+
+        # [PATCH-0] Minor release and stable release patches queue (disabled by default)
         "https://www.kernel.org/pub/linux/kernel/v5.x/patch-${pkgver}.xz"
         #"prepatch-${_basekernel}.patch"
         # [END OF PATCH-0]
@@ -162,7 +164,6 @@ source=(
         '0012-bootsplash.patch'
         '0013-bootsplash.patch'
         # [END OF PATCH-9]
-
         )
 sha256sums=('78f3c397513cf4ff0f96aa7d09a921d003e08fa97c09e0bb71d88211b40567b2'
             '4c0304c4ac05105881c7f50463a1485a71c0a5899830f07eac0321f32ae4eb4a'
@@ -208,6 +209,10 @@ sha256sums=('78f3c397513cf4ff0f96aa7d09a921d003e08fa97c09e0bb71d88211b40567b2'
             '60e295601e4fb33d9bf65f198c54c7eb07c0d1e91e2ad1e0dd6cd6e142cb266d'
             '035ea4b2a7621054f4560471f45336b981538a40172d8f17285910d4e0e0b3ef')
 
+_source_need_git_apply=(
+  '0013-bootsplash.patch'
+)
+
 export KBUILD_BUILD_HOST=$HOST
 export KBUILD_BUILD_USER=$pkgbase
 export KBUILD_BUILD_TIMESTAMP="$(date -Ru${SOURCE_DATE_EPOCH:+d @$SOURCE_DATE_EPOCH})"
@@ -229,14 +234,14 @@ prepare() {
     [[ $src = *.patch ]] || continue
 
     # Binary patching, needed for 0013-bootsplash.patch on PATCH-9
-    if [[ $src = 0013-bootsplash.patch ]]; then
+    if [[ " ${_source_need_git_apply[@]} " =~ " ${src} " ]]; then
+      msg2 "Applying patch with binary files $src..."
       # use git-apply to add binary files
-      git apply -p1 < "${srcdir}/0013-bootsplash.patch"
+      git apply -p1 < "${srcdir}/$src"
       continue
     fi
-
     msg2 "Applying patch $src..."
-    patch -Np1 < "../$src"
+    patch -Np1 < "${srcdir}/$src"
   done
 
   ### Add Clearlinux patches
@@ -303,8 +308,6 @@ prepare() {
   # ACPI Table Upgrade
   # Comment this if you don't need DSDT patching capability.
   scripts/config --enable ACPI_TABLE_UPGRADE
-
-  scripts/config --disable LOCALVERSION_AUTO
 
   make olddefconfig
 
@@ -433,8 +436,8 @@ package_linux-manjaro-clear() {
   # now we call depmod...
   depmod -b "${pkgdir}/usr" -F System.map "${_kernver}"
 
-  # add vmlinux
-  install -Dt "${_modulesdir}/build" -m644 vmlinux
+  msg2 "Fixing permissions..."
+  chmod -Rc u=rwX,go=rX "${pkgdir}"
 }
 
 package_linux-manjaro-clear-headers() {
@@ -521,6 +524,6 @@ package_linux-manjaro-clear-headers() {
   done < <(find "${_builddir}/scripts" -type f -perm -u+w -print0 2>/dev/null)
 
   msg2 "Adding symlink..."
-  mkdir -p "$pkgdir/usr/src"
-  ln -sr "${_builddir}" "$pkgdir/usr/src/$pkgbase"
+  mkdir -p "${pkgdir}/usr/src"
+  ln -sr "${_builddir}" "${pkgdir}/usr/src/$pkgbase"
 }
