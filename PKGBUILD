@@ -1,11 +1,10 @@
-# Based on the file created for Arch Linux by:
-# Tobias Powalowski <tpowa@archlinux.org>
-# Thomas Baechler <thomas@archlinux.org>
-#
 # This PKGBUILD is based on Manjaro Linux team work especially by:
 # Maintainer: Philip Müller (x86_64) <philm@manjaro.org>
 # Maintainer: Jonathon Fernyhough (i686) <jonathon@manjaro.org>
 # Contributor: Helmut Stult <helmut[at]manjaro[dot]org>
+# Based on the PKGBUILD created for Arch Linux by:
+# Tobias Powalowski <tpowa@archlinux.org>
+# Thomas Baechler <thomas@archlinux.org>
 #
 # Made by Rocky Prabowo <rocky@lazycats.id>
 
@@ -50,16 +49,35 @@
 #  31. Native optimizations autodetected by GCC (MNATIVE)
 _subarch=31
 
-_major=5.3
-_minor=10
+# Compile ONLY used modules to VASTLY reduce the number of modules built
+# and the build time.
+#
+# To keep track of which modules are needed for your specific system/hardware,
+# give module_db script a try: https://aur.archlinux.org/packages/modprobed-db
+# This PKGBUILD read the database kept if it exists
+#
+# More at this wiki page ---> https://wiki.archlinux.org/index.php/Modprobed-db
+_localmodcfg=
+
+# Use the current kernel's .config file
+# Enabling this option will use the .config of the RUNNING kernel rather than
+# the ARCH defaults. Useful when the package gets updated and you already went
+# through the trouble of customizing your config options.  NOT recommended when
+# a new kernel is released, but again, convenient for package bumps.
+_use_current="y"
+
+### IMPORTANT: Do no edit below this line unless you know what you're doing
+
+_major=5.5
+_minor=7
 _basekernel=${_major}
 _basever=${_major/./}
 _srcname=linux-${_major}
-#_clr=${_major}.${_minor}-859
-_clr=5.3.9-863
-_aufs=20190923
-_gcc_more_v='20190822'
+_clr=${_major}.7-916
+_aufs=20200203
+_gcc_more_v='20191217'
 _enable_gcc_more_v='y'
+_enable_wireguard='n'
 _makenconfig=
 
 pkgbase=linux-manjaro-clear
@@ -68,26 +86,30 @@ _kernelname='clear'
 pkgver=${_major}.${_minor}
 pkgrel=1
 arch=('i686' 'x86_64')
-url="http://www.kernel.org/"
+url="https://github.com/clearlinux-pkgs/linux"
+_wrg_snap='0.0.20200215'
 license=('GPL2')
 makedepends=('bc' 'cpio' 'docbook-xsl' 'git' 'inetutils' 'kmod' 'libelf' 'xmlto')
 options=('!strip')
 source=(
         # [BASE] Main release
-        "https://www.kernel.org/pub/linux/kernel/v5.x/linux-${_basekernel}.tar.xz"
+        "https://cdn.kernel.org/pub/linux/kernel/v5.x/linux-${_major}.tar.xz"
+        "https://cdn.kernel.org/pub/linux/kernel/v5.x/linux-${_major}.tar.sign"
+        "https://git.zx2c4.com/wireguard-linux-compat/snapshot/wireguard-linux-compat-${_wrg_snap}.tar.xz"
         # [END OF BASE]
 
         # [PATCH-0] Minor release and stable release patches queue (disabled by default)
-        "https://www.kernel.org/pub/linux/kernel/v5.x/patch-${pkgver}.xz"
+          "https://cdn.kernel.org/pub/linux/kernel/v5.x/patch-${pkgver}.xz"
         #"prepatch-${_basekernel}.patch"
         # [END OF PATCH-0]
 
         # [PATCH-1] Patched kernel config files
-        'config.x86_64' 'config' 'config.aufs' 'config.new'
+        # 'config.x86_64' 'config' 'config.new'
+        'config.aufs'
         # [END OF PATCH-1]
 
         # [PATCH-2] AUFS Patches
-        "aufs5.3-${_aufs}.patch"
+        "aufs${_major}-${_aufs}.patch"
         'aufs5-base.patch'
         'aufs5-kbuild.patch'
         'aufs5-loopback.patch'
@@ -98,33 +120,28 @@ source=(
         # [END OF PATCH-2]
 
         # [PATCH-3] Arch Linux Patches
-        '0001-ZEN-Add-sysctl-and-CONFIG-to-disallow-unprivileged-CLONE_NEWUSER.patch' # disable USER_NS for non-root users by default
-        '0002-bluetooth-fix-assumptions-on-the-return-value-of-hidp_send_message.patch'
+        '0001-ZEN-Add-sysctl-and-CONFIG-to-disallow-unprivileged-CLONE_NEWUSER.patch'
+        '0002-iwlwifi-pcie-restore-support-for-Killer-Qu-C0-NICs.patch'
+        # '0003-btrfs-send-fix-emission-of-invalid-clone-operations-within-the-same-file.patch'
+        # '0004-iwlwifi-mvm-Do-not-require-PHY_SKU-NVM-section-for-3168-devices.patch'
+        '0006-drm-remove-PageReserved-manipulation-from-drm_pci_alloc.patch'
+        '0008-drm-i915-serialise-i915_active_acquire()with__active_retire().patch'
+        '0009-drm-i915-gem-take-runtime-pm-wakeref-prior-to-unbinding.patch'
+        '0010-drm-i915-gem-avoid-parking-the-vma-as-we-unbind.patch'
+        '0011-drm-i915-gem-try-to-flush-pending-unbind-events.patch'
+        '0012-drm-i915-gem-reinitialise-the-local-list-before-repeating.patch'
+        '0013-drm-i915-add-a-simple-is-bound-check-before-unbinding.patch'
+        '0014-drm-i915-introduce-a-vma.kref.patch'
         # [END OF PATCH-3]
 
         # [PATCH-4] Manjaro Patches
 
         # [PATCH-4.1] add patches for snapd (https://gitlab.com/apparmor/apparmor-kernel/tree/5.2-outoftree)
-        '0001-apparmor-patch-to-provide-compatibility-with-v2-net-rules.patch::https://gitlab.com/apparmor/apparmor-kernel/commit/6408dbde30855bb9a2af44c9053ba2329db57c7f.patch'
-        '0002-apparmor-af_unix-mediation.patch::https://gitlab.com/apparmor/apparmor-kernel/commit/7a291673471aa583694ee760aa33e5a3f5ae9a9e.patch'
-        '0003-apparmor-fix-use-after-free-in-sk_peer_label.patch::https://gitlab.com/apparmor/apparmor-kernel/commit/9ae046ed7b54b01078e33227fa266282c41f981d.patch'
-        '0004-apparmor-fix-apparmor-mediating-locking-non-fs-unix-sockets.patch::https://gitlab.com/apparmor/apparmor-kernel/commit/b6a5dfbaa728854457570bf72b693a89550cc1f8.patch'
+        '0001-apparmor-patch-to-provide-compatibility-with-v2-net-rules.patch'
+        '0002-apparmor-af_unix-mediation.patch'
+        '0003-apparmor-fix-use-after-free-in-sk_peer_label.patch'
+        '0004-apparmor-fix-apparmor-mediating-locking-non-fs-unix-sockets.patch'
         # [END OF PATCH-4.1]
-
-        # [PATCH-4.2] fix dell xps 13 2-in-1 issue (https://lkml.org/lkml/2019/10/16/1230)
-        '0001-v5-xps13-sparc64-implement-ioremap_uc.patch'
-        '0002-v5-xps13-lib-devres-add-a-helper-function-for-ioremap_uc.patch'
-        '0003-v5-xps13-mfd-intel-lpss-use-devm_ioremap_uc-for-MMIO.patch'
-        '0004-v5-xps13-docs-driver-model-add-devm_ioremap_uc.patch'
-        # [END OF PATCH-4.2]
-
-        # [PATCH-4.3] TODO: remove when AMD properly fixes it! INFO: this is a hack and won't be upstreamed (https://forum.level1techs.com/t/145666/86 https://forum.manjaro.org/t/107820/11)
-        '0001-nonupstream-navi10-vfio-reset.patch'
-        # [END OF PATCH-4.3]
-
-        # [PATCH-4.4] https://bugzilla.kernel.org/show_bug.cgi?id=204957
-        '0001-drm-amdgpu-Add-DC-feature-mask-to-disable-fractional-pwm.patch'
-        # [END OF PATCH-4.4]
 
         # [END OF PATCH-4]
 
@@ -138,14 +155,10 @@ source=(
         # [END OF PATCH-6]
 
         # [PATCH-7] ACS Override patch
-        'add-acs-overrides.patch::https://aur.archlinux.org/cgit/aur.git/plain/add-acs-overrides.patch?h=linux-vfio'
+        'pci-enable-overrides-for-missing-acs-capabilities.patch::https://aur.archlinux.org/cgit/aur.git/plain/pci-enable-overrides-for-missing-acs-capabilities.patch?h=linux-clear'
         # [END OF PATCH-7]
 
         # [PATCH-8] Personal custom patches, you might not need this. Comment any patch that you don't need.
-
-        # [PATCH-8.1] Fix for NVMe IOMMU errors during fstrim/discard: https://bugzilla.kernel.org/show_bug.cgi?id=202665
-        'kernel-5.3-nvme-discard-align-to-page-size.patch'
-        # [END OF PATCH-8.1]
 
         # [END OF PATCH-8]
 
@@ -164,37 +177,41 @@ source=(
         '0012-bootsplash.patch'
         '0013-bootsplash.patch'
         # [END OF PATCH-9]
+
+        # [PATCH-10] Steam fsync patches
+        'futex-wait-multiple-5.2.1.patch::https://aur.archlinux.org/cgit/aur.git/plain/futex-wait-multiple-5.2.1.patch?h=linux-fsync'
+        # [END OF PATCH-10]
         )
-sha256sums=('78f3c397513cf4ff0f96aa7d09a921d003e08fa97c09e0bb71d88211b40567b2'
-            '4c0304c4ac05105881c7f50463a1485a71c0a5899830f07eac0321f32ae4eb4a'
-            '41f6c4f0445ec055db9d441d2856675e7d2f32bdf2ed8fed407f69b45bbad22b'
-            'f5903377d29fc538af98077b81982efdc091a8c628cb85566e88e1b5018f12bf'
+sha256sums=('a6fbd4ee903c128367892c2393ee0d9657b6ed3ea90016d4dc6f1f6da20b2330'
+            'SKIP'
+            '0def6f3608ec06f6dfc454aa5281a7c38b06ff27096cb341448d20602da4e923'
+            '5aabcb81dcea06dca5c9daf739a0309eaf285365150f27419e0c00c5874c8511'
             'b44d81446d8b53d5637287c30ae3eb64cae0078c3fbc45fcf1081dd6699818b5'
-            'd7935017b09f20fc57b079a449da8c50d0e01fcb6c312ce479481c6d905b9b8e'
-            'fb57bd74a20ca03559fcd3e5418069e9449ccc8629cc6c6812dca468c9d9f797'
-            'da26a3800b23a0342b58badf72f708c5e40cf256a7dcc6851fdcab2073888ebf'
-            'f6d43c68f35c5fafbb93b6ac13fe9e7fdabf7b134f8c08ebb4a7ec4b4e7d7fb3'
-            '30a44c836859156b8724c92c6bcb9eaba4cf891ce13147c7bf8433b5bc29177e'
-            'd73cfe15d67ff1bc77d9e9343486c3a34cbb8dc293e7ec3eb33297e171b84804'
-            '3f53f56f6c883876c9ceff2af3abeb73e5a06cdfc3773b72be95c218ce9f8113'
-            '55dc8df3a3d3e248eb93f5878f567428f77acb72f6243934bd6980cfede3b6ca'
-            'e2d75e11a2c220e5d3a450bb226e7e19d62a871764da5f76034fbc135fe6c749'
+            '2f7bf415269853fb807aafe850e723321e25a8250d2eaa8fa0a890af74d05ef0'
+            '9fa21f968b39c773bd81a699344d5d804bee17e02689d34a279eedfc550314c9'
+            '8d13ad211226851a090f27cef8d29a80b8776e40396a880e970d3649780b7964'
+            'c02a56c85f93752538caaf303d5e55f642edfaac7111defb831e74b570b95750'
+            '5dad02ae9c6df0e62c1030cde906863a5b0cfb4e67cadf37463ec180706aa693'
+            '902c195313a52a84a40faad9e22c41ae0816a0ac58fbb1af71c6aeebfb2b438e'
+            'c9796feddec29b332602bee218e8d3e5b629523b40314eeab078f415b96d1322'
+            'c95cc6bc798978e29125c49ab613959c939ab7cf505142e968025373f4ffb9d5'
             '7685d526bbdbfa795986591a70071c960ff572f56d3501774861728a9df8664c'
-            '24259dbc5e452a7ace71308d070e96c5e3944a5c457931cfe4e0fb501ad188f0'
-            '4b4146786e68af3bd49e9fabdbc92232e51cb2da179ba8037287b96d8addd17c'
-            'ac2cff4d3b04dde98bafc67e1a898fa8628f3bacba08531ce473edc43ddcccff'
-            '749ac28edc2cd2ac3a4406becc13327a1ece3445196ca41cbfca460454fa01bf'
-            'e55e88fe22256f079f5ac7b015c2d510912cae6f48a27a0f768b8f5f6acfc11b'
-            'f196cf64384cc4c35f9b82615bd62aca538653fa1e8d2ee82cd021697daa27b2'
-            '62539558ec5b5f87f1740f5e4e84a3740528afb8bec6335d2de721a3c8b93531'
-            '267a28e932095238604e4e23062d142fa1e2836b629190e673614159968dbec7'
-            'e82c72cd391261e79ae25330848877c451b4fa60cabed9c16898983eab269c89'
-            '7a2758f86dd1339f0f1801de2dbea059b55bf3648e240878b11e6d6890d3089c'
-            '5b38d1666d51f8863117ec1d107d3f1c68a57e2b2ab44da1a7da10cbfc7f8ef3'
-            '07466e74fc3280e8a1f7a1c81861c9a4a745367bfb8fe0befd15e7cb9b02af6d'
-            '8c11086809864b5cef7d079f930bd40da8d0869c091965fa62e95de9a0fe13b5'
-            'dbf4ac4b873ce6972e63b78d74ddba18f2701716163bb7f4b4fe5e909346a6e1'
-            'd3d5e11d78ba5652281714deb12aefe725852b18552ef710d244844a38af0373'
+            'fcb9e515bf0816db05446fd8ced7468756bea3cf01b060504bace41b2e7f5f74'
+            'c39011b7aef8e3f06c5a2fb4e5a0ea4ee6c452eb26518d05fbb7889a40487892'
+            '9653c9310468c38fce09d5c6450965359f453c9ec64d04b8647aad3759539d06'
+            '6b8c563287b694efff91a65cff7fc3924e0468e6874b62dd5ace629e96c1394b'
+            '2fac1c411f5c33405226b294081107ec1d0e24c52f02651c6e674b9b34f08431'
+            '1e3ad73ede2a80e1052b7e66dcc2adec7f909038c77195c3ad59ad4e8f731f6c'
+            '277596368b8fe02704e5291a1ad043adad279e98216eb78d2c4f38c4a047a63b'
+            '6a9de6902bc97f201a5c32768e8a68a0e8f2639d2e1cfe86d8f01bc6fda1f221'
+            'dc46801624696fb8df0e9e5aed0f66e55e48dd03a5dfe6b04281ba810c79ce70'
+            '98202b8ad70d02d86603294bae967874fa7b18704b5c7b867568b0fd33a08921'
+            '5cbbf3db9ea3205e9b89fe3049bea6dd626181db0cb0dc461e4cf5a400c68dd6'
+            'c7dbec875d0c1d6782c037a1dcefff2e5bdb5fc9dffac1beea07dd8c1bdef1d7'
+            '77746aea71ffb06c685e7769b49c78e29af9b2e28209cd245e95d9cbb0dba3c9'
+            '18440918e774aa8aff0cb98641265f60c6ce4a52f96b62d89146289ce701ddcb'
+            '7a4a209de815f4bae49c7c577c0584c77257e3953ac4324d2aa425859ba657f5'
+            '4127910703ed934224941114c2a4e0bcc5b4841f46d04063ed7b20870a51baa0'
             'a504f6cf84094e08eaa3cc5b28440261797bf4f06f04993ee46a20628ff2b53c'
             'e096b127a5208f56d368d2cb938933454d7200d70c86b763aa22c38e0ddb8717'
             '8c1c880f2caa9c7ae43281a35410203887ea8eae750fe8d360d0c8bf80fcc6e0'
@@ -207,11 +224,22 @@ sha256sums=('78f3c397513cf4ff0f96aa7d09a921d003e08fa97c09e0bb71d88211b40567b2'
             'e9f22cbb542591087d2d66dc6dc912b1434330ba3cd13d2df741d869a2c31e89'
             '27471eee564ca3149dd271b0817719b5565a9594dc4d884fe3dc51a5f03832bc'
             '60e295601e4fb33d9bf65f198c54c7eb07c0d1e91e2ad1e0dd6cd6e142cb266d'
-            '035ea4b2a7621054f4560471f45336b981538a40172d8f17285910d4e0e0b3ef')
+            '035ea4b2a7621054f4560471f45336b981538a40172d8f17285910d4e0e0b3ef'
+            'b8a9225b4b5cbabac26398d11cc26566e4407d150dacb92f3411c9bb8cc23942')
 
 _source_need_git_apply=(
   '0013-bootsplash.patch'
 )
+
+_source_skip_auto_patch=(
+  'pci-enable-overrides-for-missing-acs-capabilities.patch'
+)
+
+validpgpkeys=(
+  'ABAF11C65A2970B130ABE3C479BE3E4300411886'  # Linus Torvalds
+  '647F28654894E3BD457199BE38DBBDC86092693E'  # Greg Kroah-Hartman
+)
+
 
 export KBUILD_BUILD_HOST=$HOST
 export KBUILD_BUILD_USER=$pkgbase
@@ -227,6 +255,21 @@ prepare() {
   # http://git.kernel.org/?p=linux/kernel/git/stable/stable-queue.git
   # enable only if you have "gen-stable-queue-patch.sh" executed before
   #patch -Np1 -i "${srcdir}/prepatch-${_basekernel}.patch"
+
+  ### Add Clear Linux patches
+  msg2 "Applying Clear Linux patches..."
+  for i in $(grep '^Patch' ${srcdir}/linux-${_clr}/linux.spec |\
+      grep -Ev '^Patch0123|^Patch1001' | sed -n 's/.*: //p'); do
+      echo "Applying patch ${i}..."
+    patch -Np1 -i "$srcdir/linux-${_clr}/${i}"
+  done
+
+  ### Link the WireGuard source directory into the kernel tree
+  if [ "${_enable_wireguard}" = "y" ]; then
+    msg2 "Adding the WireGuard source directory..."
+    "${srcdir}/wireguard-linux-compat-${_wrg_snap}/kernel-tree-scripts/jury-rig.sh" ./
+  fi
+
   local src
   for src in "${source[@]}"; do
     src="${src%%::*}"
@@ -240,21 +283,23 @@ prepare() {
       git apply -p1 < "${srcdir}/$src"
       continue
     fi
-    msg2 "Applying patch $src..."
-    patch -Np1 < "${srcdir}/$src"
-  done
 
-  ### Add Clearlinux patches
-  for i in $(grep '^Patch' ${srcdir}/linux-${_clr}/linux.spec | grep -Ev '^Patch0123|^Patch0130|^Patch0073' | sed -n 's/.*: //p'); do
-    msg2 "Applying patch ${i}..."
-    patch -Np1 -i "${srcdir}/linux-${_clr}/${i}"
+    # Skip user defined patches
+    if [[ " ${_source_skip_auto_patch[@]} " =~ " ${src} " ]]; then
+      msg2 "Skipping patch $src..."
+      continue
+    else
+      msg2 "Applying patch $src..."
+      patch -Np1 < "${srcdir}/$src"
+    fi
   done
 
   ### Setting config
   msg2 "Setting config..."
-  cat "${srcdir}/config.new" > ./.config
+  # cat "${srcdir}/config.new" > ./.config
   cat "${srcdir}/config.aufs" >> ./.config
 
+  cp -Tf $srcdir/linux-${_clr}/config ./.config
   ### Enable extra stuff from Arch and Manjaro kernel
   msg2 "Enable extra stuff from Arch and Manjaro kernel..."
 
@@ -292,18 +337,17 @@ prepare() {
   # AMD and KVM stuff
   scripts/config --enable HAVE_KVM \
                 --enable KVM \
-                --enable KVM_AMD \
+                --module KVM_AMD \
                 --enable DRM_AMD_DC_DCN2_0 \
                 --enable AMD_IOMMU \
                 --enable AMD_IOMMU_V2 \
                 --module GPIO_AMD_FCH \
-                --module NTB_AMD \
                 --enable MICROCODE_AMD \
 
   # Disable full refcount check
   # This will hide the warning from Nvidia proprietary drivers.
   # Comment the line below to keep the clearlinux default config.
-  scripts/config --undefine REFCOUNT_FULL
+  # scripts/config --undefine REFCOUNT_FULL
 
   # ACPI Table Upgrade
   # Comment this if you don't need DSDT patching capability.
@@ -314,14 +358,15 @@ prepare() {
   ### Patch source to unlock additional gcc CPU optimizations
   # https://github.com/graysky2/kernel_gcc_patch
   if [ "${_enable_gcc_more_v}" = "y" ]; then
-    msg2 "Applying enable_additional_cpu_optimizations_for_gcc_v9.1+_kernel_v4.13+.patch ..."
-    patch -Np1 -i "${srcdir}/kernel_gcc_patch-$_gcc_more_v/enable_additional_cpu_optimizations_for_gcc_v9.1+_kernel_v4.13+.patch"
+    echo "Applying enable_additional_cpu_optimizations_for_gcc_v9.1+_kernel_v5.5+.patch ..."
+    patch -Np1 -i "$srcdir/kernel_gcc_patch-$_gcc_more_v/enable_additional_cpu_optimizations_for_gcc_v9.1+_kernel_v5.5+.patch"
   fi
 
-  ### Enable ACS override patch
+
+  ## Enable ACS override patch
   if [ "${_enable_acs_override}" = "y" ]; then
     msg2 "Enabling ACS override patch..."
-    patch -Np1 -i "${srcdir}/add-acs-overrides.patch"
+    patch -Np1 -i "${srcdir}/pci-enable-overrides-for-missing-acs-capabilities.patch"
   fi
 
   ### Get kernel version
@@ -359,6 +404,21 @@ prepare() {
     fi
   fi
 
+ ### Optionally use running kernel's config
+    # code originally by nous; http://aur.archlinux.org/packages.php?ID=40191
+    if [ -n "$_use_current" ]; then
+        if [[ -s /proc/config.gz ]]; then
+            echo "Extracting config from /proc/config.gz..."
+            # modprobe configs
+            zcat /proc/config.gz > ./.config
+        else
+            warning "Your kernel was not compiled with IKCONFIG_PROC!"
+            warning "You cannot read the current config!"
+            warning "Aborting!"
+            exit
+        fi
+    fi
+
   # set patchlevel to 2
   # sed -ri "s|^(PATCHLEVEL =).*|\1 2|" Makefile
 
@@ -392,9 +452,11 @@ build() {
 
 package_linux-manjaro-clear() {
   pkgdesc="The ${pkgbase/linux/Linux} kernel and modules"
-  depends=('coreutils' 'linux-firmware' 'kmod' 'mkinitcpio>=27')
-  optdepends=('crda: to set the correct wireless channels of your country')
-  provides=("linux-clear=${pkgver}")
+  depends=('coreutils' 'kmod' 'initramfs')
+    optdepends=('crda: to set the correct wireless channels of your country'
+                'linux-firmware: firmware images needed for some devices'
+                'modprobed-db: Keeps track of EVERY kernel module that has ever been probed - useful for those of us who make localmodconfig')
+    provides=('WIREGUARD-MODULE' "linux-clear=${pkgver}")
 
   cd "${srcdir}/linux-${_basekernel}"
 
@@ -409,7 +471,7 @@ package_linux-manjaro-clear() {
 
   # systemd expects to find the kernel here to allow hibernation
   # https://github.com/systemd/systemd/commit/edda44605f06a41fb86b7ab8128dcf99161d2344
-  install -Dm644 "$(make -s image_name)" "${_modulesdir}/vmlinuz"
+  install -Dm644 "$(make LOCALVERSION= -s image_name)" "${_modulesdir}/vmlinuz"
 
   # Used by mkinitcpio to name the kernel
   echo "${pkgbase}" | install -Dm644 /dev/stdin "${_modulesdir}/pkgbase"
@@ -436,6 +498,9 @@ package_linux-manjaro-clear() {
   # now we call depmod...
   depmod -b "${pkgdir}/usr" -F System.map "${_kernver}"
 
+  # add vmlinux
+  install -Dt "${pkgdir}/usr/lib/modules/${_kernver}/build" -m644 vmlinux
+
   msg2 "Fixing permissions..."
   chmod -Rc u=rwX,go=rX "${pkgdir}"
 }
@@ -448,8 +513,9 @@ package_linux-manjaro-clear-headers() {
   local _builddir="${pkgdir}/usr/lib/modules/${_kernver}/build"
   msg2 "Installing headers and build files..."
 
-  install -Dt "${_builddir}" -m644 Makefile .config Module.symvers System.map \
-    localversion.* version vmlinux
+  # install -Dt "${_builddir}" -m644 Makefile .config Module.symvers System.map \
+  #   localversion.* version vmlinux
+  install -Dt "${_builddir}" -m644 Makefile .config Module.symvers
   install -Dt "${_builddir}/kernel" -m644 kernel/Makefile
 
   mkdir "${_builddir}/.tmp_versions"
