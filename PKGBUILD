@@ -8,13 +8,15 @@
 #
 # Made by Rocky Prabowo <rocky@lazycats.id>
 
+### BUILD OPTIONS
+
+# Tweak kernel options prior to a build via nconfig
+_makenconfig=
+
 # Optionally select a sub architecture by number if building in a clean chroot
 # Leaving this entry blank will require user interaction during the build
 # which will cause a failure to build if using makechrootpkg. Note that the
 # generic (default) option is 30.
-#
-# Note - the march=native option is unavailable by this method, use the nconfig
-# and manually select it.
 #
 #  1. AMD Opteron/Athlon64/Hammer/K8 (MK8)
 #  2. AMD Opteron/Athlon64/Hammer/K8 with SSE3 (MK8SSE3)
@@ -49,6 +51,8 @@
 #  31. Native optimizations autodetected by GCC (MNATIVE)
 _subarch=31
 
+# Set these variables below to "y" enable them
+
 # Compile ONLY used modules to VASTLY reduce the number of modules built
 # and the build time.
 #
@@ -60,13 +64,20 @@ _subarch=31
 _localmodcfg=
 
 # Use the current kernel's .config file
+#
 # Enabling this option will use the .config of the RUNNING kernel rather than
 # the ARCH defaults. Useful when the package gets updated and you already went
 # through the trouble of customizing your config options.  NOT recommended when
 # a new kernel is released, but again, convenient for package bumps.
-_use_current="y"
+_use_current='y'
 
-### IMPORTANT: Do no edit below this line unless you know what you're doing
+# Unlock additional CPU optimizations for gcc
+_enable_gcc_more_v='y'
+
+# Include wireguard into the kernel
+_enable_wireguard='n'
+
+##! IMPORTANT: Do no edit below this line unless you know what you're doing
 
 _major=5.5
 _minor=7
@@ -76,15 +87,12 @@ _srcname=linux-${_major}
 _clr=${_major}.7-916
 _aufs=20200203
 _gcc_more_v='20191217'
-_enable_gcc_more_v='y'
-_enable_wireguard='n'
-_makenconfig=
 
 pkgbase=linux-manjaro-clear
 pkgname=('linux-manjaro-clear' 'linux-manjaro-clear-headers')
 _kernelname='clear'
 pkgver=${_major}.${_minor}
-pkgrel=2
+pkgrel=3
 arch=('i686' 'x86_64')
 url="https://github.com/clearlinux-pkgs/linux"
 _wrg_snap='0.0.20200215'
@@ -92,23 +100,23 @@ license=('GPL2')
 makedepends=('bc' 'cpio' 'docbook-xsl' 'git' 'inetutils' 'kmod' 'libelf' 'xmlto')
 options=('!strip')
 source=(
-        # [BASE] Main release
+        ### [BASE] Main release
         "https://cdn.kernel.org/pub/linux/kernel/v5.x/linux-${_major}.tar.xz"
         "https://cdn.kernel.org/pub/linux/kernel/v5.x/linux-${_major}.tar.sign"
         "https://git.zx2c4.com/wireguard-linux-compat/snapshot/wireguard-linux-compat-${_wrg_snap}.tar.xz"
-        # [END OF BASE]
+        ### [END OF BASE]
 
-        # [PATCH-0] Minor release and stable release patches queue (disabled by default)
-          "https://cdn.kernel.org/pub/linux/kernel/v5.x/patch-${pkgver}.xz"
-        #"prepatch-${_basekernel}.patch"
-        # [END OF PATCH-0]
+        ### [PATCH-0] Minor release and stable release patches queue (disabled by default)
+        "https://cdn.kernel.org/pub/linux/kernel/v5.x/patch-${pkgver}.xz"
+        # "prepatch-${_basekernel}.patch"
+        ### [END OF PATCH-0]
 
-        # [PATCH-1] Patched kernel config files
+        ### [PATCH-1] Patched kernel config files
         # 'config.x86_64' 'config' 'config.new'
         'config.aufs'
-        # [END OF PATCH-1]
+        ### [END OF PATCH-1]
 
-        # [PATCH-2] AUFS Patches
+        ### [PATCH-2] AUFS Patches
         "aufs${_major}-${_aufs}.patch"
         'aufs5-base.patch'
         'aufs5-kbuild.patch'
@@ -117,12 +125,14 @@ source=(
         'aufs5-standalone.patch'
         'tmpfs-idr.patch'
         'vfs-ino.patch'
-        # [END OF PATCH-2]
+        ### [END OF PATCH-2]
 
-        # [PATCH-3] Arch Linux Patches
+        ### [PATCH-3] Arch Linux Patches
         '0001-ZEN-Add-sysctl-and-CONFIG-to-disallow-unprivileged-CLONE_NEWUSER.patch'
         '0002-iwlwifi-pcie-restore-support-for-Killer-Qu-C0-NICs.patch'
+        ##! DISABLED: This patch has been incorporated into Linux 5.5.1
         # '0003-btrfs-send-fix-emission-of-invalid-clone-operations-within-the-same-file.patch'
+        ##! DISABLED: Patched by clearlinux
         # '0004-iwlwifi-mvm-Do-not-require-PHY_SKU-NVM-section-for-3168-devices.patch'
         '0006-drm-remove-PageReserved-manipulation-from-drm_pci_alloc.patch'
         '0008-drm-i915-serialise-i915_active_acquire()with__active_retire().patch'
@@ -132,37 +142,35 @@ source=(
         '0012-drm-i915-gem-reinitialise-the-local-list-before-repeating.patch'
         '0013-drm-i915-add-a-simple-is-bound-check-before-unbinding.patch'
         '0014-drm-i915-introduce-a-vma.kref.patch'
-        # [END OF PATCH-3]
+        ### [END OF PATCH-3]
 
-        # [PATCH-4] Manjaro Patches
-
-        # [PATCH-4.1] add patches for snapd (https://gitlab.com/apparmor/apparmor-kernel/tree/5.2-outoftree)
+        ### [PATCH-4] Manjaro Patches
+        ### [PATCH-4.1] add patches for snapd (https://gitlab.com/apparmor/apparmor-kernel/tree/5.2-outoftree)
         '0001-apparmor-patch-to-provide-compatibility-with-v2-net-rules.patch'
         '0002-apparmor-af_unix-mediation.patch'
         '0003-apparmor-fix-use-after-free-in-sk_peer_label.patch'
         '0004-apparmor-fix-apparmor-mediating-locking-non-fs-unix-sockets.patch'
-        # [END OF PATCH-4.1]
+        ### [END OF PATCH-4.1]
+        ### [END OF PATCH-4]
 
-        # [END OF PATCH-4]
-
-        # [PATCH-5] clearlinux Patches
+        ### [PATCH-5] clearlinux Patches
         # "clearlinux::git+https://github.com/clearlinux-pkgs/linux.git#tag=${_clr}"
         "clearlinux-${_clr}.tar.gz::https://codeload.github.com/clearlinux-pkgs/linux/tar.gz/${_clr}"
-        # [END OF PATCH-5]
+        ### [END OF PATCH-5]
 
-        # [PATCH-6] Patch source to unlock additional gcc CPU optimizations
+        ### [PATCH-6] Patch source to unlock additional gcc CPU optimizations
         "enable_additional_cpu_optimizations-$_gcc_more_v.tar.gz::https://github.com/graysky2/kernel_gcc_patch/archive/$_gcc_more_v.tar.gz"
-        # [END OF PATCH-6]
+        ### [END OF PATCH-6]
 
-        # [PATCH-7] ACS Override patch
+        ### [PATCH-7] ACS Override patch
         'pci-enable-overrides-for-missing-acs-capabilities.patch::https://aur.archlinux.org/cgit/aur.git/plain/pci-enable-overrides-for-missing-acs-capabilities.patch?h=linux-clear'
-        # [END OF PATCH-7]
+        ### [END OF PATCH-7]
 
-        # [PATCH-8] Personal custom patches, you might not need this. Comment any patch that you don't need.
+        ### [PATCH-8] Personal custom patches, you might not need this. Comment any patch that you don't need.
+        ##! No additional patches needed ATM.
+        ### [END OF PATCH-8]
 
-        # [END OF PATCH-8]
-
-        # [PATCH-9] Bootsplash: Add bootsplash - http://lkml.iu.edu/hypermail/linux/kernel/1710.3/01542.html
+        ### [PATCH-9] Bootsplash: Add bootsplash - http://lkml.iu.edu/hypermail/linux/kernel/1710.3/01542.html
         '0001-bootsplash.patch'
         '0002-bootsplash.patch'
         '0003-bootsplash.patch'
@@ -176,11 +184,12 @@ source=(
         '0011-bootsplash.patch'
         '0012-bootsplash.patch'
         '0013-bootsplash.patch'
-        # [END OF PATCH-9]
+        ### [END OF PATCH-9]
 
-        # [PATCH-10] Steam fsync patches
+        ### [PATCH-10] Steam fsync patches
         'futex-wait-multiple-5.2.1.patch::https://aur.archlinux.org/cgit/aur.git/plain/futex-wait-multiple-5.2.1.patch?h=linux-fsync'
-        # [END OF PATCH-10]
+        ### [END OF PATCH-10]
+
         )
 sha256sums=('a6fbd4ee903c128367892c2393ee0d9657b6ed3ea90016d4dc6f1f6da20b2330'
             'SKIP'
@@ -227,7 +236,7 @@ sha256sums=('a6fbd4ee903c128367892c2393ee0d9657b6ed3ea90016d4dc6f1f6da20b2330'
             '035ea4b2a7621054f4560471f45336b981538a40172d8f17285910d4e0e0b3ef'
             'b8a9225b4b5cbabac26398d11cc26566e4407d150dacb92f3411c9bb8cc23942')
 
-_source_need_git_apply=(
+_source_use_git_apply=(
   '0013-bootsplash.patch'
 )
 
@@ -248,13 +257,26 @@ export KBUILD_BUILD_TIMESTAMP="$(date -Ru${SOURCE_DATE_EPOCH:+d @$SOURCE_DATE_EP
 prepare() {
   cd "${srcdir}/linux-${_basekernel}"
 
-  # add upstream patch
+  ### Add upstream patch
   patch -p1 -i "${srcdir}/patch-${pkgver}"
 
-  # add latest fixes from stable queue, if needed
-  # http://git.kernel.org/?p=linux/kernel/git/stable/stable-queue.git
-  # enable only if you have "gen-stable-queue-patch.sh" executed before
-  #patch -Np1 -i "${srcdir}/prepatch-${_basekernel}.patch"
+  ### Add the latest fixes from stable queue, if needed
+  ### http://git.kernel.org/?p=linux/kernel/git/stable/stable-queue.git
+  ### Enable only if you have "gen-stable-queue-patch.sh" executed before
+  # patch -Np1 -i "${srcdir}/prepatch-${_basekernel}.patch"
+
+  ### Kernel version setting
+  if [ "${_kernelname}" != "" ]; then
+    # sed -i "s|CONFIG_LOCALVERSION=.*|CONFIG_LOCALVERSION=\"-${_kernelname}\"|g" ./.config
+    # sed -ri "s|(\#\s)?CONFIG_LOCALVERSION_AUTO.*|CONFIG_LOCALVERSION_AUTO=n|" ./.config
+    msg2 "Setting version..."
+    scripts/setlocalversion --save-scmversion
+    echo "-$pkgrel" > localversion.10-pkgrel
+    echo "-${_kernelname}" > localversion.20-pkgname
+  fi
+
+  ### Set extraversion to pkgrel
+  # sed -ri "s|^(EXTRAVERSION =).*|\1 -${pkgrel}|" Makefile
 
   ### Add Clear Linux patches
   msg2 "Applying Clear Linux patches..."
@@ -270,28 +292,29 @@ prepare() {
     "${srcdir}/wireguard-linux-compat-${_wrg_snap}/kernel-tree-scripts/jury-rig.sh" ./
   fi
 
+  ### Automatic source patching routine
   local src
   for src in "${source[@]}"; do
     src="${src%%::*}"
     src="${src##*/}"
     [[ $src = *.patch ]] || continue
 
-    # Binary patching, needed for 0013-bootsplash.patch on PATCH-9
-    if [[ " ${_source_need_git_apply[@]} " =~ " ${src} " ]]; then
+    ### Skip auto patching on patches defined in _source_skip_auto_patch
+    if [[ " ${_source_skip_auto_patch[@]} " =~ " ${src} " ]]; then
+      msg2 "Skipping patch $src..."
+      continue
+    fi
+
+    ### Binary patching, needed for 0013-bootsplash.patch on PATCH-9
+    if [[ " ${_source_use_git_apply[@]} " =~ " ${src} " ]]; then
       msg2 "Applying patch with binary files $src..."
-      # use git-apply to add binary files
+      ### Using git-apply to patch binary files
       git apply -p1 < "${srcdir}/$src"
       continue
     fi
 
-    # Skip user defined patches
-    if [[ " ${_source_skip_auto_patch[@]} " =~ " ${src} " ]]; then
-      msg2 "Skipping patch $src..."
-      continue
-    else
-      msg2 "Applying patch $src..."
-      patch -Np1 < "${srcdir}/$src"
-    fi
+    msg2 "Applying patch $src..."
+    patch -Np1 < "${srcdir}/$src"
   done
 
   ### Setting config
@@ -300,27 +323,28 @@ prepare() {
   cat "${srcdir}/config.aufs" >> ./.config
 
   cp -Tf $srcdir/linux-${_clr}/config ./.config
+
   ### Enable extra stuff from Arch and Manjaro kernel
   msg2 "Enable extra stuff from Arch and Manjaro kernel..."
 
-  # General setup
+  ### General setup
   scripts/config --undefine RT_GROUP_SCHED \
               --enable GCC_PLUGIN_STRUCTLEAK_BYREF_ALL
 
-  # Power management and ACPI options
+  ### Power management and ACPI options
   scripts/config --enable ACPI_REV_OVERRIDE_POSSIBLE  \
                   --enable HIBERNATION
 
-  # Enable loadable module support
+  ### Enable loadable module support
   scripts/config --undefine MODULE_SIG_FORCE \
                   --enable MODULE_COMPRESS \
                   --enable-after MODULE_COMPRESS MODULE_COMPRESS_LZO
 
-  # Networking support
+  ### Networking support
   scripts/config --enable NETFILTER_INGRESS \
                   --module NET_SCH_CAKE
 
-  # Device Drivers
+  ### Device Drivers
   scripts/config --enable FRAMEBUFFER_CONSOLE_DEFERRED_TAKEOVER \
                   --enable DELL_SMBIOS_SMM \
                   --module PATA_JMICRON \
@@ -329,12 +353,12 @@ prepare() {
                   --module-after SND_MIXER_OSS SND_PCM_OSS \
                   --enable-after SND_PCM_OSS SND_PCM_OSS_PLUGINS
 
-  # Security options
+  ### Security options
   scripts/config --enable SECURITY_TOMOYO \
                   --enable SECURITY_APPARMOR \
                   --enable SECURITY_YAMA
 
-  # AMD and KVM stuff
+  ### AMD and KVM stuff
   scripts/config --enable HAVE_KVM \
                 --enable KVM \
                 --module KVM_AMD \
@@ -344,26 +368,26 @@ prepare() {
                 --module GPIO_AMD_FCH \
                 --enable MICROCODE_AMD \
 
-  # Disable full refcount check
-  # This will hide the warning from Nvidia proprietary drivers.
-  # Comment the line below to keep the clearlinux default config.
+  ### Disable full refcount check
+  ### This config will hide the warning from Nvidia proprietary drivers.
+  ### Comment the line below to keep the clearlinux default config.
   # scripts/config --undefine REFCOUNT_FULL
 
-  # ACPI Table Upgrade
-  # Comment this if you don't need DSDT patching capability.
+  ### ACPI Table Upgrade
+  ### Comment this if you don't need ACPI table patching capability.
   scripts/config --enable ACPI_TABLE_UPGRADE
 
   make olddefconfig
 
   ### Patch source to unlock additional gcc CPU optimizations
-  # https://github.com/graysky2/kernel_gcc_patch
+  ### https://github.com/graysky2/kernel_gcc_patch
   if [ "${_enable_gcc_more_v}" = "y" ]; then
     echo "Applying enable_additional_cpu_optimizations_for_gcc_v9.1+_kernel_v5.5+.patch ..."
     patch -Np1 -i "$srcdir/kernel_gcc_patch-$_gcc_more_v/enable_additional_cpu_optimizations_for_gcc_v9.1+_kernel_v5.5+.patch"
   fi
 
 
-  ## Enable ACS override patch
+  ### Enable ACS override patch
   if [ "${_enable_acs_override}" = "y" ]; then
     msg2 "Enabling ACS override patch..."
     patch -Np1 -i "${srcdir}/pci-enable-overrides-for-missing-acs-capabilities.patch"
@@ -375,18 +399,6 @@ prepare() {
   else
     make prepare
   fi
-
-  if [ "${_kernelname}" != "" ]; then
-    # sed -i "s|CONFIG_LOCALVERSION=.*|CONFIG_LOCALVERSION=\"-${_kernelname}\"|g" ./.config
-    # sed -ri "s|(\#\s)?CONFIG_LOCALVERSION_AUTO.*|CONFIG_LOCALVERSION_AUTO=n|" ./.config
-      msg2 "Setting version..."
-      scripts/setlocalversion --save-scmversion
-      echo "-$pkgrel" > localversion.10-pkgrel
-      echo "-${_kernelname}" > localversion.20-pkgname
-  fi
-
-  # set extraversion to pkgrel
-  # sed -ri "s|^(EXTRAVERSION =).*|\1 -${pkgrel}|" Makefile
 
   ### Prepared version
   make -s kernelrelease > version
@@ -419,21 +431,20 @@ prepare() {
         fi
     fi
 
-  # set patchlevel to 2
+  # Set patchlevel to 2
   # sed -ri "s|^(PATCHLEVEL =).*|\1 2|" Makefile
 
-  # don't run depmod on 'make install'. We'll do this ourselves in packaging
+  # Don't run depmod on 'make install'. We'll do this ourselves in packaging
   sed -i '2iexit 0' scripts/depmod.sh
 
-  # load configuration
-  # Configure the kernel. Replace the line below with one of your choice.
-  #make menuconfig # CLI menu for configuration
-  #make nconfig # new CLI menu for configuration
-  #make xconfig # X-based configuration
-  #make oldconfig # using old config from previous kernel version
-  # ... or manually edit .config
+  ### Configure the kernel. Replace the line below with one of your choice.
+  # make menuconfig # CLI menu for configuration
+  # make nconfig # new CLI menu for configuration
+  # make xconfig # X-based configuration
+  # make oldconfig # using old config from previous kernel version
+  ### ... or manually edit .config
 
-  # rewrite configuration
+  ### Rewrite configuration
   yes "" | make config >/dev/null
 
   ### Running make nconfig
@@ -445,8 +456,6 @@ prepare() {
 
 build() {
   cd "${srcdir}/linux-${_basekernel}"
-
-  # build!
   make ${MAKEFLAGS} LOCALVERSION= bzImage modules
 }
 
@@ -456,51 +465,56 @@ package_linux-manjaro-clear() {
     optdepends=('crda: to set the correct wireless channels of your country'
                 'linux-firmware: firmware images needed for some devices'
                 'modprobed-db: Keeps track of EVERY kernel module that has ever been probed - useful for those of us who make localmodconfig')
+  if [ "${_enable_wireguard}" = "y" ]; then
     provides=('WIREGUARD-MODULE' "linux-clear=${pkgver}")
+  else
+    provides=("linux-clear=${pkgver}")
+  fi
 
   cd "${srcdir}/linux-${_basekernel}"
 
   KARCH=x86
 
-  # get kernel version
+  ### Get kernel version
   _kernver="$(make LOCALVERSION= kernelrelease)"
   local _modulesdir="${pkgdir}/usr/lib/modules/${_kernver}"
 
   mkdir -p "${pkgdir}"/{boot,usr/lib/modules}
   make LOCALVERSION= INSTALL_MOD_PATH="${pkgdir}/usr" modules_install
 
-  # systemd expects to find the kernel here to allow hibernation
-  # https://github.com/systemd/systemd/commit/edda44605f06a41fb86b7ab8128dcf99161d2344
+  ### Systemd expects to find the kernel here to allow hibernation
+  ### https://github.com/systemd/systemd/commit/edda44605f06a41fb86b7ab8128dcf99161d2344
   install -Dm644 "$(make LOCALVERSION= -s image_name)" "${_modulesdir}/vmlinuz"
 
-  # Used by mkinitcpio to name the kernel
+  ### Used by mkinitcpio to name the kernel
   echo "${pkgbase}" | install -Dm644 /dev/stdin "${_modulesdir}/pkgbase"
   echo "${_basekernel}-${_kernelname}-${CARCH}" | install -Dm644 /dev/stdin "${_modulesdir}/kernelbase"
 
-  # add kernel version
+  ### Add kernel version
   if [ "${CARCH}" = "x86_64" ]; then
      echo "${pkgver}-${pkgrel}-${_kernelname} x64" > "${pkgdir}/boot/${pkgbase}-${CARCH}.kver"
   else
      echo "${pkgver}-${pkgrel}-${_kernelname} x32" > "${pkgdir}/boot/${pkgbase}-${CARCH}.kver"
   fi
 
-  # make room for external modules
+  ### Make room for external modules
   local _extramodules="extramodules-${_basekernel}-${_kernelname:--MANJARO}"
   ln -s "../${_extramodules}" "${_modulesdir}/extramodules"
 
-  # add real version for building modules and running depmod from hook
+  ### Add real version for building modules and running depmod from hook
   echo "${_kernver}" |
     install -Dm644 /dev/stdin "${pkgdir}/usr/lib/modules/${_extramodules}/version"
 
-  # remove build and source links
+  ### Remove build and source links
   rm ${_modulesdir}/{source,build}
 
-  # now we call depmod...
+  ### Run depmod
   depmod -b "${pkgdir}/usr" -F System.map "${_kernver}"
 
-  # add vmlinux
+  ### Add vmlinux
   install -Dt "${pkgdir}/usr/lib/modules/${_kernver}/build" -m644 vmlinux
 
+  ### Fix package files permissions
   msg2 "Fixing permissions..."
   chmod -Rc u=rwX,go=rX "${pkgdir}"
 }
@@ -513,8 +527,7 @@ package_linux-manjaro-clear-headers() {
   local _builddir="${pkgdir}/usr/lib/modules/${_kernver}/build"
   msg2 "Installing headers and build files..."
 
-  # install -Dt "${_builddir}" -m644 Makefile .config Module.symvers System.map \
-  #   localversion.* version vmlinux
+  # install -Dt "${_builddir}" -m644 Makefile .config Module.symvers System.map localversion.* version vmlinux
   install -Dt "${_builddir}" -m644 Makefile .config Module.symvers
   install -Dt "${_builddir}/kernel" -m644 kernel/Makefile
 
@@ -535,25 +548,26 @@ package_linux-manjaro-clear-headers() {
   install -Dt "${_builddir}/drivers/md" -m644 drivers/md/*.h
   install -Dt "${_builddir}/net/mac80211" -m644 net/mac80211/*.h
 
-  # http://bugs.archlinux.org/task/13146
+  ### http://bugs.archlinux.org/task/13146
   install -Dt "${_builddir}/drivers/media/i2c" -m644 drivers/media/i2c/msp3400-driver.h
 
-  # http://bugs.archlinux.org/task/20402
+  ### http://bugs.archlinux.org/task/20402
   install -Dt "${_builddir}/drivers/media/usb/dvb-usb" -m644 drivers/media/usb/dvb-usb/*.h
   install -Dt "${_builddir}/drivers/media/dvb-frontends" -m644 drivers/media/dvb-frontends/*.h
   install -Dt "${_builddir}/drivers/media/tuners" -m644 drivers/media/tuners/*.h
 
-  # add xfs and shmem for aufs building
+  ### Add xfs and shmem for aufs building
   mkdir -p "${_builddir}"/{fs/xfs,mm}
 
   msg2 "Installing KConfig files..."
   find . -name Kconfig\* -exec install -Dm644 {} "${_builddir}/{}" \;
 
   if [ "${CARCH}" = "x86_64" ]; then
-    # add objtool for external module building and enabled VALIDATION_STACK option
+    ### Add objtool for external module building and enabled VALIDATION_STACK option
     install -Dt "${_builddir}/tools/objtool" tools/objtool/objtool
   fi
 
+  ### Remove unused architectures
   msg2 "Removing unneeded architectures..."
   local _arch
   for _arch in "${_builddir}"/arch/*/; do
@@ -561,18 +575,23 @@ package_linux-manjaro-clear-headers() {
     rm -r "${_arch}"
   done
 
-  msg2 "Removing documentation..."
+  ### Remove the kernel documentations
+  msg2 "Removing documentations..."
   rm -r "${_builddir}/Documentation"
 
+  ### Remove broken symlinks
   msg2 "Removing broken symlinks..."
   find -L "${_builddir}" -type l -printf 'Removing %P\n' -delete
 
+  ### Remove loose objects
   msg2 "Removing loose objects..."
   find "${_builddir}" -type f -name '*.o' -printf 'Removing %P\n' -delete
 
+  ### Fix package files permissions
   msg2 "Fixing permissions..."
   chmod -R u=rwX,go=rX "${_builddir}"
 
+  ### Strip build tools
   msg2 "Stripping build tools..."
   local _binary
   while read -rd '' _binary; do
@@ -589,6 +608,7 @@ package_linux-manjaro-clear-headers() {
     esac
   done < <(find "${_builddir}/scripts" -type f -perm -u+w -print0 2>/dev/null)
 
+  ### Symlink kernel headers to /usr/src
   msg2 "Adding symlink..."
   mkdir -p "${pkgdir}/usr/src"
   ln -sr "${_builddir}" "${pkgdir}/usr/src/$pkgbase"
