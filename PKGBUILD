@@ -80,11 +80,11 @@ _enable_wireguard='n'
 ##! IMPORTANT: Do no edit below this line unless you know what you're doing
 
 _major=5.5
-_minor=7
+_minor=8
 _basekernel=${_major}
 _basever=${_major/./}
 _srcname=linux-${_major}
-_clr=${_major}.7-916
+_clr=${_major}.8-917
 _aufs=20200203
 _gcc_more_v='20191217'
 
@@ -92,7 +92,7 @@ pkgbase=linux-manjaro-clear
 pkgname=('linux-manjaro-clear' 'linux-manjaro-clear-headers')
 _kernelname='clear'
 pkgver=${_major}.${_minor}
-pkgrel=3
+pkgrel=1
 arch=('i686' 'x86_64')
 url="https://github.com/clearlinux-pkgs/linux"
 _wrg_snap='0.0.20200215'
@@ -194,7 +194,7 @@ source=(
 sha256sums=('a6fbd4ee903c128367892c2393ee0d9657b6ed3ea90016d4dc6f1f6da20b2330'
             'SKIP'
             '0def6f3608ec06f6dfc454aa5281a7c38b06ff27096cb341448d20602da4e923'
-            '5aabcb81dcea06dca5c9daf739a0309eaf285365150f27419e0c00c5874c8511'
+            'b3f900cc7ef8aec03a9c0ab1108d4abc6105d5874965df3ada275bf76f6a5a0d'
             'b44d81446d8b53d5637287c30ae3eb64cae0078c3fbc45fcf1081dd6699818b5'
             '2f7bf415269853fb807aafe850e723321e25a8250d2eaa8fa0a890af74d05ef0'
             '9fa21f968b39c773bd81a699344d5d804bee17e02689d34a279eedfc550314c9'
@@ -218,7 +218,7 @@ sha256sums=('a6fbd4ee903c128367892c2393ee0d9657b6ed3ea90016d4dc6f1f6da20b2330'
             '5cbbf3db9ea3205e9b89fe3049bea6dd626181db0cb0dc461e4cf5a400c68dd6'
             'c7dbec875d0c1d6782c037a1dcefff2e5bdb5fc9dffac1beea07dd8c1bdef1d7'
             '77746aea71ffb06c685e7769b49c78e29af9b2e28209cd245e95d9cbb0dba3c9'
-            '18440918e774aa8aff0cb98641265f60c6ce4a52f96b62d89146289ce701ddcb'
+            '1578cab807f56aeb6e769fcc587e749522f28f38b36c60f0014b27749c8225c9'
             '7a4a209de815f4bae49c7c577c0584c77257e3953ac4324d2aa425859ba657f5'
             '4127910703ed934224941114c2a4e0bcc5b4841f46d04063ed7b20870a51baa0'
             'a504f6cf84094e08eaa3cc5b28440261797bf4f06f04993ee46a20628ff2b53c'
@@ -406,7 +406,7 @@ prepare() {
 
   ### Optionally load needed modules for the make localmodconfig
   # See https://aur.archlinux.org/packages/modprobed-db
-  if [ -n "$_localmodcfg" ]; then
+  if [ "$_localmodcfg" = "y" ]; then
     if [ -f $HOME/.config/modprobed.db ]; then
       msg2 "Running Steven Rostedt's make localmodconfig now"
       make LSMOD=$HOME/.config/modprobed.db localmodconfig
@@ -418,7 +418,7 @@ prepare() {
 
  ### Optionally use running kernel's config
     # code originally by nous; http://aur.archlinux.org/packages.php?ID=40191
-    if [ -n "$_use_current" ]; then
+    if [ "$_use_current" = "y" ]; then
         if [[ -s /proc/config.gz ]]; then
             echo "Extracting config from /proc/config.gz..."
             # modprobe configs
@@ -462,13 +462,13 @@ build() {
 package_linux-manjaro-clear() {
   pkgdesc="The ${pkgbase/linux/Linux} kernel and modules"
   depends=('coreutils' 'kmod' 'initramfs')
-    optdepends=('crda: to set the correct wireless channels of your country'
+  optdepends=('crda: to set the correct wireless channels of your country'
                 'linux-firmware: firmware images needed for some devices'
                 'modprobed-db: Keeps track of EVERY kernel module that has ever been probed - useful for those of us who make localmodconfig')
+  provides=("linux-clear=${pkgver}")
+
   if [ "${_enable_wireguard}" = "y" ]; then
-    provides=('WIREGUARD-MODULE' "linux-clear=${pkgver}")
-  else
-    provides=("linux-clear=${pkgver}")
+    provides+=('WIREGUARD-MODULE')
   fi
 
   cd "${srcdir}/linux-${_basekernel}"
