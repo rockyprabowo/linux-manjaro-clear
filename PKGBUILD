@@ -10,10 +10,6 @@
 # Made by Rocky Prabowo <rocky@lazycats.id>
 
 ### BUILD OPTIONS
-
-# Tweak kernel options prior to a build via nconfig
-_makenconfig=
-
 # Optionally select a sub architecture by number if building in a clean chroot
 # Leaving this entry blank will require user interaction during the build
 # which will cause a failure to build if using makechrootpkg. Note that the
@@ -54,6 +50,9 @@ _subarch=31
 
 # Set these variables below to "y" enable them
 
+# Tweak kernel options prior to a build nconfig
+_makenconfig='n'
+
 # Compile ONLY used modules to VASTLY reduce the number of modules built
 # and the build time.
 #
@@ -75,11 +74,11 @@ _use_current='n'
 # Unlock additional CPU optimizations for gcc
 _enable_gcc_more_v='y'
 
-# Include wireguard into the kernel
+# Integrate wireguard into the kernel
 _enable_wireguard='y'
 
-# Enable ccache-friendly, reproducible build
-_enable_reproducible_build='y'
+# Enable ccache-friendly build
+_ccache_friendly='y'
 
 # Include AUFS support. Manjaro includes this to their kernel by default
 _enable_aufs='n'
@@ -88,19 +87,22 @@ _enable_aufs='n'
 _enable_bootsplash='n'
 
 # Enable PCI overrides for missing acs capabilities
-_enable_acs_override='y'
+_enable_pci_acs_override='y'
 
-##! IMPORTANT: Do no edit below this line unless you know what you're doing
+# Use prebaked Manjaro kernel configurations.
+_use_manjaro_configs='n'
+
+##! IMPORTANT: Do no edit anything below this line unless you know what you're .
 
 _major=5.5
 _minor=13
-_rel=1
+_rel=2
 _kernelname='clear'
 _basekernel=${_major}
 _basever=${_major/./}
 _srcname=linux-${_major}
 _clr=${_major}.13-924
-_aufs=20200302
+_aufs='20200302'
 _gcc_more_v='20191217'
 _wrg_snap='0.0.20200318'
 
@@ -125,9 +127,9 @@ source=(
         # "prepatch-${_basekernel}.patch"
         ### [END OF PATCH-0]
 
-        ### [PATCH-1] Patched kernel config files
-		# 'config'
-        # 'config.x86_64'
+        ### [PATCH-1] Patched kernel config files from Manjaro
+		'config'
+        'config.x86_64'
         'config.aufs'
         ### [END OF PATCH-1]
 
@@ -160,7 +162,6 @@ source=(
         ### [END OF PATCH-3]
 
         ### [PATCH-4] Manjaro Patches
-        ### [PATCH-4.1] add patches for snapd (https://gitlab.com/apparmor/apparmor-kernel/tree/5.2-outoftree)
         '0001-apparmor-patch-to-provide-compatibility-with-v2-net-rules.patch'
         '0002-apparmor-af_unix-mediation.patch'
         '0003-apparmor-fix-use-after-free-in-sk_peer_label.patch'
@@ -168,7 +169,6 @@ source=(
         '0001-nonupstream-navi10-vfio-reset.patch'
         '0001-i2c-nuvoton-nc677x-hwmon-driver.patch'
 		'proc_mounts.patch'
-        ### [END OF PATCH-4.1]
         ### [END OF PATCH-4]
 
         ### [PATCH-5] clearlinux Patches
@@ -213,6 +213,8 @@ sha256sums=('a6fbd4ee903c128367892c2393ee0d9657b6ed3ea90016d4dc6f1f6da20b2330'
             'SKIP'
             'fa74a8627f731754fbf4ea7d6ae8f571a2cfe8cd4b744a5f165065619cb836a1'
             'a58dad931dda6eba7656551da73d1c452317617c8282c094fa4f646d9422993a'
+            'bfe52746bfc04114627b6f1e0dd94bc05dd94abe8f6dbee770f78d6116e315e8'
+            'c8d2f94be0b72c06e1264e9d26d9e67e164a9e531307252049a3ee3007fb383b'
             'b44d81446d8b53d5637287c30ae3eb64cae0078c3fbc45fcf1081dd6699818b5'
             '9d45542b47406bea3ba249de119a0b143121c39f285d50179898f0ff2857615e'
             '9fa21f968b39c773bd81a699344d5d804bee17e02689d34a279eedfc550314c9'
@@ -303,7 +305,7 @@ validpgpkeys=(
 )
 
 _bootstrap() {
-	if [ "$_enable_reproducible_build" = "y" ] ; then
+	if [ "$_ccache_friendly" = "y" ] ; then
 		export KBUILD_BUILD_HOST=manjaro
 		export KBUILD_BUILD_USER=build
 		export KBUILD_BUILD_TIMESTAMP="Thu, 01 Jan 1970 00:00:00 +0000"
@@ -314,7 +316,7 @@ _bootstrap() {
 	fi
 	[ "$_enable_aufs" = "y" ] || _source_skip_auto_patch+=("${_source_aufs_patches[@]}")
 	[ "$_enable_bootsplash" = "y" ] || _source_skip_auto_patch+=("${_source_bootsplash_patches[@]}")
-	[ "$_enable_acs_override" = "y" ] || _source_skip_auto_patch+=("${_source_acs_override_patches[@]}")
+	[ "$_enable_pci_acs_override" = "y" ] || _source_skip_auto_patch+=("${_source_acs_override_patches[@]}")
 }
 
 prepare() {
@@ -383,8 +385,12 @@ prepare() {
 
 	### Setting config
 	msg2 "Setting config..."
-	cp -Tf $srcdir/linux-${_clr}/config ./.config
-	# cat "${srcdir}/config.x86_64" > ./.config
+	if [ "$_use_manjaro_configs" = "y" ] ; then
+		[ "${CARCH}" = "x86_64" ] && cat "${srcdir}/config.x86_64" > ./.config || cat "${srcdir}/config" > ./.config
+		$srcdir/linux-${_clr}/config >> ./.config
+	else
+		cp -Tf $srcdir/linux-${_clr}/config ./.config
+	fi
 	[ "$_enable_aufs" = "y" ] && cat "${srcdir}/config.aufs" >> ./.config
 
 	### Enable extra stuff from Arch and Manjaro kernel
@@ -444,8 +450,8 @@ prepare() {
 					--set-val MESSAGE_LOGLEVEL_DEFAULT 7 \
 					--undefine TTY_PRINTK
 
-	### Disable GCC plugins for reproducible build
-	if [ "$_enable_reproducible_build" = "y" ] ; then
+	### Disable GCC plugins for ccache-friendly build
+	if [ "$_ccache_friendly" = "y" ] ; then
 		scripts/config --disable GCC_PLUGINS \
 						--undefine GCC_PLUGIN_STRUCTLEAK \
 						--undefine GCC_PLUGIN_STRUCTLEAK_BYREF_ALL
@@ -512,7 +518,7 @@ prepare() {
   yes "" | make config >/dev/null
 
   ### Run make nconfig if needed
-  [[ -z "$_makenconfig" ]] || make nconfig
+  [ "$_makenconfig" = "y" ] && make nconfig
 
   ### Save configuration for later reuse
   cp -Tf ./.config "${startdir}/config-${pkgver}-${pkgrel}-${_kernelname}"

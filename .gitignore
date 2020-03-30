@@ -1,1 +1,11 @@
-*
+pkg/
+src/
+*.pkg.*
+config-*-clear
+linux-*.tar*
+patch-*.xz
+clearlinux-*.tar*
+enable_additional_cpu_optimizations-*.tar*
+pci-enable-overrides-for-missing-acs-capabilities.patch
+futex-wait-multiple-5.2.1.patch
+wireguard-linux-compat-*
