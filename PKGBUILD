@@ -75,7 +75,7 @@ _use_current='n'
 _enable_gcc_more_v='y'
 
 # Integrate wireguard into the kernel
-_enable_wireguard='y'
+_enable_wireguard='n'
 
 # Enable ccache-friendly build
 _ccache_friendly='y'
@@ -90,13 +90,13 @@ _enable_bootsplash='n'
 _enable_pci_acs_override='y'
 
 # Use prebaked Manjaro kernel configurations.
-_use_manjaro_configs='n'
+_use_manjaro_configs='y'
 
 ##! IMPORTANT: Do no edit anything below this line unless you know what you're .
 
 _major=5.5
-_minor=13
-_rel=2
+_minor=14
+_rel=1
 _kernelname='clear'
 _basekernel=${_major}
 _basever=${_major/./}
@@ -104,7 +104,7 @@ _srcname=linux-${_major}
 _clr=${_major}.13-924
 _aufs='20200302'
 _gcc_more_v='20191217'
-_wrg_snap='0.0.20200318'
+_wrg_snap='1.0.20200401'
 
 pkgbase=linux-manjaro-clear
 pkgname=('linux-manjaro-clear' 'linux-manjaro-clear-headers')
@@ -211,8 +211,8 @@ source=(
         )
 sha256sums=('a6fbd4ee903c128367892c2393ee0d9657b6ed3ea90016d4dc6f1f6da20b2330'
             'SKIP'
-            'fa74a8627f731754fbf4ea7d6ae8f571a2cfe8cd4b744a5f165065619cb836a1'
-            'a58dad931dda6eba7656551da73d1c452317617c8282c094fa4f646d9422993a'
+            '7dfb4a8315e1d6ae406ff32d01c496175df558dd65968a19e5222d02c7cfb77a'
+            'c7543f9484e3ed755ca9068967facb01f77971efe80829f6d9c6fd35939c7b0a'
             'bfe52746bfc04114627b6f1e0dd94bc05dd94abe8f6dbee770f78d6116e315e8'
             'c8d2f94be0b72c06e1264e9d26d9e67e164a9e531307252049a3ee3007fb383b'
             'b44d81446d8b53d5637287c30ae3eb64cae0078c3fbc45fcf1081dd6699818b5'
@@ -387,7 +387,7 @@ prepare() {
 	msg2 "Setting config..."
 	if [ "$_use_manjaro_configs" = "y" ] ; then
 		[ "${CARCH}" = "x86_64" ] && cat "${srcdir}/config.x86_64" > ./.config || cat "${srcdir}/config" > ./.config
-		$srcdir/linux-${_clr}/config >> ./.config
+		cat $srcdir/linux-${_clr}/config >> ./.config
 	else
 		cp -Tf $srcdir/linux-${_clr}/config ./.config
 	fi
