@@ -74,9 +74,6 @@ _use_current='n'
 # Unlock additional CPU optimizations for gcc
 _enable_gcc_more_v='y'
 
-# Integrate wireguard into the kernel
-_enable_wireguard='n'
-
 # Enable ccache-friendly build
 _ccache_friendly='y'
 
@@ -95,16 +92,15 @@ _use_manjaro_configs='y'
 ##! IMPORTANT: Do no edit anything below this line unless you know what you're .
 
 _major=5.5
-_minor=14
+_minor=15
 _rel=1
 _kernelname='clear'
 _basekernel=${_major}
 _basever=${_major/./}
 _srcname=linux-${_major}
-_clr=${_major}.13-924
+_clr=${_major}.15-930
 _aufs='20200302'
 _gcc_more_v='20191217'
-_wrg_snap='1.0.20200401'
 
 pkgbase=linux-manjaro-clear
 pkgname=('linux-manjaro-clear' 'linux-manjaro-clear-headers')
@@ -119,7 +115,6 @@ source=(
         ### [BASE] Main release
         "https://cdn.kernel.org/pub/linux/kernel/v5.x/linux-${_major}.tar.xz"
         "https://cdn.kernel.org/pub/linux/kernel/v5.x/linux-${_major}.tar.sign"
-        "https://git.zx2c4.com/wireguard-linux-compat/snapshot/wireguard-linux-compat-${_wrg_snap}.tar.xz"
         ### [END OF BASE]
 
         ### [PATCH-0] Minor release and stable release patches queue (disabled by default)
@@ -128,7 +123,7 @@ source=(
         ### [END OF PATCH-0]
 
         ### [PATCH-1] Patched kernel config files from Manjaro
-		'config'
+	'config'
         'config.x86_64'
         'config.aufs'
         ### [END OF PATCH-1]
@@ -158,7 +153,6 @@ source=(
         '0012-drm-i915-gem-reinitialise-the-local-list-before-repeating.patch'
         '0013-drm-i915-add-a-simple-is-bound-check-before-unbinding.patch'
         '0014-drm-i915-introduce-a-vma.kref.patch'
-		'0015-iwlwifi-dont-send-GEO_TX_POWER_LIMIT_if_no_wgds_table.patch'
         ### [END OF PATCH-3]
 
         ### [PATCH-4] Manjaro Patches
@@ -211,8 +205,7 @@ source=(
         )
 sha256sums=('a6fbd4ee903c128367892c2393ee0d9657b6ed3ea90016d4dc6f1f6da20b2330'
             'SKIP'
-            '7dfb4a8315e1d6ae406ff32d01c496175df558dd65968a19e5222d02c7cfb77a'
-            'c7543f9484e3ed755ca9068967facb01f77971efe80829f6d9c6fd35939c7b0a'
+            '938b47e8e6c8e7ee091d0da149eab7cc63f3858bc7cc043ed4963771dc621b90'
             'bfe52746bfc04114627b6f1e0dd94bc05dd94abe8f6dbee770f78d6116e315e8'
             'c8d2f94be0b72c06e1264e9d26d9e67e164a9e531307252049a3ee3007fb383b'
             'b44d81446d8b53d5637287c30ae3eb64cae0078c3fbc45fcf1081dd6699818b5'
@@ -235,7 +228,6 @@ sha256sums=('a6fbd4ee903c128367892c2393ee0d9657b6ed3ea90016d4dc6f1f6da20b2330'
             '277596368b8fe02704e5291a1ad043adad279e98216eb78d2c4f38c4a047a63b'
             '6a9de6902bc97f201a5c32768e8a68a0e8f2639d2e1cfe86d8f01bc6fda1f221'
             'dc46801624696fb8df0e9e5aed0f66e55e48dd03a5dfe6b04281ba810c79ce70'
-            'ed9c7b145c25e82a6802895212c0042765fe1ec27f89e82f322aea2653894276'
             '98202b8ad70d02d86603294bae967874fa7b18704b5c7b867568b0fd33a08921'
             '5cbbf3db9ea3205e9b89fe3049bea6dd626181db0cb0dc461e4cf5a400c68dd6'
             'c7dbec875d0c1d6782c037a1dcefff2e5bdb5fc9dffac1beea07dd8c1bdef1d7'
@@ -243,7 +235,7 @@ sha256sums=('a6fbd4ee903c128367892c2393ee0d9657b6ed3ea90016d4dc6f1f6da20b2330'
             '7a2758f86dd1339f0f1801de2dbea059b55bf3648e240878b11e6d6890d3089c'
             '0556859a8168c8f7da9af8e2059d33216d9e5378d2cac70ca54c5ff843fa5add'
             'b271c370394a84440378927a2acca47efeba1886adfc0118fe03760ddac0ea15'
-            '12d8aa72d36d3382e22e3d5bbfc8b4342f1410268dbcae2aa8f300b51843efff'
+            'a8ccb122ad89a5ee711bc8361c3731e48434cf8639397ccdbe259efffaecf0f7'
             '7a4a209de815f4bae49c7c577c0584c77257e3953ac4324d2aa425859ba657f5'
             '4127910703ed934224941114c2a4e0bcc5b4841f46d04063ed7b20870a51baa0'
             'a504f6cf84094e08eaa3cc5b28440261797bf4f06f04993ee46a20628ff2b53c'
@@ -347,16 +339,10 @@ prepare() {
 	### Add Clear Linux patches
 	msg2 "Applying Clear Linux patches..."
 	for i in $(grep '^Patch' ${srcdir}/linux-${_clr}/linux.spec |\
-			grep -Ev '^Patch0123|^Patch1001|^Patch0051' | sed -n 's/.*: //p'); do
+			grep -Ev '^Patch0123' | sed -n 's/.*: //p'); do
 			echo "Applying patch ${i}..."
 		patch -Np1 -i "$srcdir/linux-${_clr}/${i}"
 	done
-
-	### Link the WireGuard source directory into the kernel tree
-	if [ "${_enable_wireguard}" = "y" ] ; then
-		msg2 "Adding the WireGuard source directory..."
-		"${srcdir}/wireguard-linux-compat-${_wrg_snap}/kernel-tree-scripts/jury-rig.sh" ./
-	fi
 
 	### Automatic source patching routine
 	local src
@@ -539,7 +525,7 @@ package_linux-manjaro-clear() {
 				'linux-firmware: firmware images needed for some devices'
 				'modprobed-db: Keeps track of EVERY kernel module that has ever been probed - useful for those of us who make localmodconfig')
 	provides=("linux-clear=${pkgver}")
-	[ "${_enable_wireguard}" = "y" ] && provides+=('WIREGUARD-MODULE')
+	provides+=(VIRTUALBOX-GUEST-MODULES WIREGUARD-MODULE)
 
 	cd "${srcdir}/linux-${_basekernel}"
 
@@ -686,3 +672,4 @@ package_linux-manjaro-clear-headers() {
 	msg2 "Fixing permissions..."
 	chmod -Rc u=rwX,go=rX "$pkgdir"
 }
+
