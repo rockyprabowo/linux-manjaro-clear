@@ -93,7 +93,7 @@ _use_manjaro_configs='y'
 
 _major=5.5
 _minor=15
-_rel=1
+_rel=2
 _kernelname='clear'
 _basekernel=${_major}
 _basever=${_major/./}
