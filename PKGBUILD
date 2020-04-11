@@ -91,14 +91,14 @@ _use_manjaro_configs='y'
 
 ##! IMPORTANT: Do no edit anything below this line unless you know what you're .
 
-_major=5.5
-_minor=15
-_rel=2
+_major=5.6
+_minor=3
+_rel=1
 _kernelname='clear'
 _basekernel=${_major}
 _basever=${_major/./}
 _srcname=linux-${_major}
-_clr=${_major}.15-930
+_clr=${_major}.3-935
 _aufs='20200302'
 _gcc_more_v='20191217'
 
@@ -112,24 +112,24 @@ license=('GPL2')
 makedepends=('bc' 'cpio' 'docbook-xsl' 'git' 'inetutils' 'kmod' 'libelf' 'xmlto')
 options=('!strip')
 source=(
-        ### [BASE] Main release
-        "https://cdn.kernel.org/pub/linux/kernel/v5.x/linux-${_major}.tar.xz"
-        "https://cdn.kernel.org/pub/linux/kernel/v5.x/linux-${_major}.tar.sign"
-        ### [END OF BASE]
+	### [BASE] Main release
+	"https://cdn.kernel.org/pub/linux/kernel/v5.x/linux-${_major}.tar.xz"
+	"https://cdn.kernel.org/pub/linux/kernel/v5.x/linux-${_major}.tar.sign"
+	### [END OF BASE]
 
-        ### [PATCH-0] Minor release and stable release patches queue (disabled by default)
-        "https://cdn.kernel.org/pub/linux/kernel/v5.x/patch-${pkgver}.xz"
-        # "prepatch-${_basekernel}.patch"
-        ### [END OF PATCH-0]
+	### [PATCH-0] Minor release and stable release patches queue (disabled by default)
+	"https://cdn.kernel.org/pub/linux/kernel/v5.x/patch-${pkgver}.xz"
+	# "prepatch-${_basekernel}.patch"
+	### [END OF PATCH-0]
 
-        ### [PATCH-1] Patched kernel config files from Manjaro
+	### [PATCH-1] Patched kernel config files from Manjaro
 	'config'
-        'config.x86_64'
-        'config.aufs'
-        ### [END OF PATCH-1]
+	'config.x86_64'
+	'config.aufs'
+	### [END OF PATCH-1]
 
-        ### [PATCH-2] AUFS Patches
-        "aufs${_major}-${_aufs}.patch"
+	### [PATCH-2] AUFS Patches
+ 	"aufs5.x-rcN-${_aufs}.patch"
         'aufs5-base.patch'
         'aufs5-kbuild.patch'
         'aufs5-loopback.patch'
@@ -137,105 +137,76 @@ source=(
         'aufs5-standalone.patch'
         'tmpfs-idr.patch'
         'vfs-ino.patch'
-		'lockdep-debug.patch'
-        ### [END OF PATCH-2]
+	### [END OF PATCH-2]
 
-        ### [PATCH-3] Arch Linux Patches
-        '0001-ZEN-Add-sysctl-and-CONFIG-to-disallow-unprivileged-CLONE_NEWUSER.patch'
-        '0002-iwlwifi-pcie-restore-support-for-Killer-Qu-C0-NICs.patch'
-        ##! DISABLED: Patched by clearlinux
-        # '0004-iwlwifi-mvm-Do-not-require-PHY_SKU-NVM-section-for-3168-devices.patch'
-        '0006-drm-remove-PageReserved-manipulation-from-drm_pci_alloc.patch'
-        '0008-drm-i915-serialise-i915_active_acquire()with__active_retire().patch'
-        '0009-drm-i915-gem-take-runtime-pm-wakeref-prior-to-unbinding.patch'
-        '0010-drm-i915-gem-avoid-parking-the-vma-as-we-unbind.patch'
-        '0011-drm-i915-gem-try-to-flush-pending-unbind-events.patch'
-        '0012-drm-i915-gem-reinitialise-the-local-list-before-repeating.patch'
-        '0013-drm-i915-add-a-simple-is-bound-check-before-unbinding.patch'
-        '0014-drm-i915-introduce-a-vma.kref.patch'
-        ### [END OF PATCH-3]
+	### [PATCH-3] Arch Linux Patches
+	'0001-ZEN-Add-sysctl-and-CONFIG-to-disallow-unprivileged-CLONE_NEWUSER.patch'
+	### [END OF PATCH-3]
 
-        ### [PATCH-4] Manjaro Patches
-        '0001-apparmor-patch-to-provide-compatibility-with-v2-net-rules.patch'
-        '0002-apparmor-af_unix-mediation.patch'
-        '0003-apparmor-fix-use-after-free-in-sk_peer_label.patch'
-        '0004-apparmor-fix-apparmor-mediating-locking-non-fs-unix-sockets.patch'
-        '0001-nonupstream-navi10-vfio-reset.patch'
-        '0001-i2c-nuvoton-nc677x-hwmon-driver.patch'
-		'proc_mounts.patch'
-        ### [END OF PATCH-4]
+	### [PATCH-4] Manjaro Patches
+	'0001-ALSA-hda-Fix-potential-access-overflow-in-beep-helpe.patch'
+        '0002-ALSA-ice1724-Fix-invalid-access-for-enumerated-ctl-i.patch'
+	'0001-apparmor-patch-to-provide-compatibility-with-v2-net-rules.patch'
+	'0002-apparmor-af_unix-mediation.patch'
+	'0003-apparmor-fix-use-after-free-in-sk_peer_label.patch'
+	'0004-apparmor-fix-apparmor-mediating-locking-non-fs-unix-sockets.patch'
+	### [END OF PATCH-4]
 
-        ### [PATCH-5] clearlinux Patches
-        # "clearlinux::git+https://github.com/clearlinux-pkgs/linux.git#tag=${_clr}"
-        "clearlinux-${_clr}.tar.gz::https://codeload.github.com/clearlinux-pkgs/linux/tar.gz/${_clr}"
-        ### [END OF PATCH-5]
+	### [PATCH-5] clearlinux Patches
+	# "clearlinux::git+https://github.com/clearlinux-pkgs/linux.git#tag=${_clr}"
+	"clearlinux-${_clr}.tar.gz::https://codeload.github.com/clearlinux-pkgs/linux/tar.gz/${_clr}"
+	### [END OF PATCH-5]
 
-        ### [PATCH-6] Patch source to unlock additional gcc CPU optimizations
-        "enable_additional_cpu_optimizations-$_gcc_more_v.tar.gz::https://github.com/graysky2/kernel_gcc_patch/archive/$_gcc_more_v.tar.gz"
-        ### [END OF PATCH-6]
+	### [PATCH-6] Patch source to unlock additional gcc CPU optimizations
+	"enable_additional_cpu_optimizations-$_gcc_more_v.tar.gz::https://github.com/graysky2/kernel_gcc_patch/archive/$_gcc_more_v.tar.gz"
+	### [END OF PATCH-6]
 
-        ### [PATCH-7] ACS Override patch
-        'pci-enable-overrides-for-missing-acs-capabilities.patch::https://aur.archlinux.org/cgit/aur.git/plain/pci-enable-overrides-for-missing-acs-capabilities.patch?h=linux-clear'
-        ### [END OF PATCH-7]
+	### [PATCH-7] ACS Override patch
+	'pci-enable-overrides-for-missing-acs-capabilities.patch::https://aur.archlinux.org/cgit/aur.git/plain/pci-enable-overrides-for-missing-acs-capabilities.patch?h=linux-clear'
+	### [END OF PATCH-7]
 
-        ### [PATCH-8] Personal custom patches, you might not need this. Comment any patch that you don't need.
-        ##! No additional patches needed ATM.
-        ### [END OF PATCH-8]
+	### [PATCH-8] Personal custom patches, you might not need this. Comment any patch that you don't need.
+	##! No additional patches needed ATM.
+	### [END OF PATCH-8]
 
-        ### [PATCH-9] Bootsplash: Add bootsplash - http://lkml.iu.edu/hypermail/linux/kernel/1710.3/01542.html
-        '0001-bootsplash.patch'
-        '0002-bootsplash.patch'
-        '0003-bootsplash.patch'
-        '0004-bootsplash.patch'
-        '0005-bootsplash.patch'
-        '0006-bootsplash.patch'
-        '0007-bootsplash.patch'
-        '0008-bootsplash.patch'
-        '0009-bootsplash.patch'
-        '0010-bootsplash.patch'
-        '0011-bootsplash.patch'
-        '0012-bootsplash.patch'
-        '0013-bootsplash.patch'
-        ### [END OF PATCH-9]
-
-        ### [PATCH-10] Steam fsync patches
-        'futex-wait-multiple-5.2.1.patch::https://aur.archlinux.org/cgit/aur.git/plain/futex-wait-multiple-5.2.1.patch?h=linux-fsync'
-        ### [END OF PATCH-10]
-
+	### [PATCH-9] Bootsplash: Add bootsplash - http://lkml.iu.edu/hypermail/linux/kernel/1710.3/01542.html
+	'0001-bootsplash.patch'
+	'0002-bootsplash.patch'
+	'0003-bootsplash.patch'
+	'0004-bootsplash.patch'
+	'0005-bootsplash.patch'
+	'0006-bootsplash.patch'
+	'0007-bootsplash.patch'
+	'0008-bootsplash.patch'
+	'0009-bootsplash.patch'
+	'0010-bootsplash.patch'
+	'0011-bootsplash.patch'
+	'0012-bootsplash.patch'
+	'0013-bootsplash.patch'
+	### [END OF PATCH-9]
         )
-sha256sums=('a6fbd4ee903c128367892c2393ee0d9657b6ed3ea90016d4dc6f1f6da20b2330'
+sha256sums=('e342b04a2aa63808ea0ef1baab28fc520bd031ef8cf93d9ee4a31d4058fcb622'
             'SKIP'
-            '938b47e8e6c8e7ee091d0da149eab7cc63f3858bc7cc043ed4963771dc621b90'
+            'a677aa98df0fc907314130b511feef3108717d98c405c98a51dde4e06d1c492c'
             'bfe52746bfc04114627b6f1e0dd94bc05dd94abe8f6dbee770f78d6116e315e8'
-            'c8d2f94be0b72c06e1264e9d26d9e67e164a9e531307252049a3ee3007fb383b'
+            'c4c1e6dc98efba3d0af1a70a28fdeaf84ce1bfc61713c2d7159403bbab59b233'
             'b44d81446d8b53d5637287c30ae3eb64cae0078c3fbc45fcf1081dd6699818b5'
-            '9d45542b47406bea3ba249de119a0b143121c39f285d50179898f0ff2857615e'
-            '9fa21f968b39c773bd81a699344d5d804bee17e02689d34a279eedfc550314c9'
-            '8d13ad211226851a090f27cef8d29a80b8776e40396a880e970d3649780b7964'
-            'c02a56c85f93752538caaf303d5e55f642edfaac7111defb831e74b570b95750'
-            '5dad02ae9c6df0e62c1030cde906863a5b0cfb4e67cadf37463ec180706aa693'
-            '902c195313a52a84a40faad9e22c41ae0816a0ac58fbb1af71c6aeebfb2b438e'
-            'c9796feddec29b332602bee218e8d3e5b629523b40314eeab078f415b96d1322'
-            'c95cc6bc798978e29125c49ab613959c939ab7cf505142e968025373f4ffb9d5'
-            'e06341f7019f3caa34e738666b36c1776765ea1cb1f31cfdac90d197f596b30d'
+            'ef60c4afbae6270748bca1661d054815ea83f84ac3962fa316cd1b6abea506a4'
+            '294d00163a5c68fee26f0adb52ccc309b1d1ae69ed7fe65fdabf29d425798ee4'
+            '8e3b0a3c7c9b62d29dc711885ef00578a65f1d0315f31e1d9f438aac1ced02d6'
+            '562752375ec67ece529eadf3f003193a371a875bdf6ed842ea8afde0e2e5618f'
+            '023a61cdf160ca98dc9a0222c1e82c98a1cc09ddfe2c04020a3c30a9b568107e'
+            'eb1aaa49b9d5cdf35985a0803129b39145f81a4f1499f6e7f2afd8d31017b694'
+            '1c69ed79eeef0c0dcf68ce3086a0e372260d2fed94c93c7711e0682b2bcaae39'
+            '29adcb9fac02b77f93ec36c2003ae930cc0a6ee1884d002c280480b5e8f22261'
             '7685d526bbdbfa795986591a70071c960ff572f56d3501774861728a9df8664c'
-            'fcb9e515bf0816db05446fd8ced7468756bea3cf01b060504bace41b2e7f5f74'
-            'c39011b7aef8e3f06c5a2fb4e5a0ea4ee6c452eb26518d05fbb7889a40487892'
-            '9653c9310468c38fce09d5c6450965359f453c9ec64d04b8647aad3759539d06'
-            '6b8c563287b694efff91a65cff7fc3924e0468e6874b62dd5ace629e96c1394b'
-            '2fac1c411f5c33405226b294081107ec1d0e24c52f02651c6e674b9b34f08431'
-            '1e3ad73ede2a80e1052b7e66dcc2adec7f909038c77195c3ad59ad4e8f731f6c'
-            '277596368b8fe02704e5291a1ad043adad279e98216eb78d2c4f38c4a047a63b'
-            '6a9de6902bc97f201a5c32768e8a68a0e8f2639d2e1cfe86d8f01bc6fda1f221'
-            'dc46801624696fb8df0e9e5aed0f66e55e48dd03a5dfe6b04281ba810c79ce70'
+            'd9032bb428c42e093f2686ae2830133c3600496f93574b3b41dc0ec69af6d5ad'
+            'bc53f7ec92126955e221698e634d2185909e83bc526f7ff9c7ad86da3fd8c8f4'
             '98202b8ad70d02d86603294bae967874fa7b18704b5c7b867568b0fd33a08921'
             '5cbbf3db9ea3205e9b89fe3049bea6dd626181db0cb0dc461e4cf5a400c68dd6'
             'c7dbec875d0c1d6782c037a1dcefff2e5bdb5fc9dffac1beea07dd8c1bdef1d7'
             '77746aea71ffb06c685e7769b49c78e29af9b2e28209cd245e95d9cbb0dba3c9'
-            '7a2758f86dd1339f0f1801de2dbea059b55bf3648e240878b11e6d6890d3089c'
-            '0556859a8168c8f7da9af8e2059d33216d9e5378d2cac70ca54c5ff843fa5add'
-            'b271c370394a84440378927a2acca47efeba1886adfc0118fe03760ddac0ea15'
-            'a8ccb122ad89a5ee711bc8361c3731e48434cf8639397ccdbe259efffaecf0f7'
+            '4743a3e408874d0f2748a0782176eb08c59705760c0a0b498dc5407e7244ad89'
             '7a4a209de815f4bae49c7c577c0584c77257e3953ac4324d2aa425859ba657f5'
             '4127910703ed934224941114c2a4e0bcc5b4841f46d04063ed7b20870a51baa0'
             'a504f6cf84094e08eaa3cc5b28440261797bf4f06f04993ee46a20628ff2b53c'
@@ -250,11 +221,10 @@ sha256sums=('a6fbd4ee903c128367892c2393ee0d9657b6ed3ea90016d4dc6f1f6da20b2330'
             'e9f22cbb542591087d2d66dc6dc912b1434330ba3cd13d2df741d869a2c31e89'
             '27471eee564ca3149dd271b0817719b5565a9594dc4d884fe3dc51a5f03832bc'
             '60e295601e4fb33d9bf65f198c54c7eb07c0d1e91e2ad1e0dd6cd6e142cb266d'
-            '035ea4b2a7621054f4560471f45336b981538a40172d8f17285910d4e0e0b3ef'
-            'b8a9225b4b5cbabac26398d11cc26566e4407d150dacb92f3411c9bb8cc23942')
+            '035ea4b2a7621054f4560471f45336b981538a40172d8f17285910d4e0e0b3ef')
 
 _source_use_git_apply=(
-  '0013-bootsplash.patch'
+	'0013-bootsplash.patch'
 )
 
 _source_skip_auto_patch=()
@@ -265,14 +235,14 @@ _source_acs_override_patches=(
 
 _source_aufs_patches=(
 	'config.aufs'
-	"aufs${_major}-${_aufs}.patch"
-	'aufs5-base.patch'
-	'aufs5-kbuild.patch'
-	'aufs5-loopback.patch'
-	'aufs5-mmap.patch'
-	'aufs5-standalone.patch'
-	'tmpfs-idr.patch'
-	'vfs-ino.patch'
+	"aufs5.x-rcN-${_aufs}.patch"
+        'aufs5-base.patch'
+        'aufs5-kbuild.patch'
+        'aufs5-loopback.patch'
+        'aufs5-mmap.patch'
+        'aufs5-standalone.patch'
+        'tmpfs-idr.patch'
+        'vfs-ino.patch'
 )
 
 _source_bootsplash_patches=(
@@ -383,64 +353,66 @@ prepare() {
 	msg2 "Enable extra stuff from Arch and Manjaro kernel..."
 
 	### General setup
-	scripts/config --enable IKCONFIG \
-					--enable-after IKCONFIG IKCONFIG_PROC \
-					--undefine RT_GROUP_SCHED
+	scripts/config	--enable IKCONFIG \
+			--enable-after IKCONFIG IKCONFIG_PROC \
+			--undefine RT_GROUP_SCHED
 
 	### Power management and ACPI options
-	scripts/config --enable ACPI_REV_OVERRIDE_POSSIBLE  \
-					--enable ACPI_TABLE_UPGRADE
+	scripts/config	--enable ACPI_REV_OVERRIDE_POSSIBLE  \
+			--enable ACPI_TABLE_UPGRADE
 
 	### Enable loadable module support
-	scripts/config --undefine MODULE_SIG_FORCE \
-					--enable MODULE_COMPRESS \
-					--enable-after MODULE_COMPRESS MODULE_COMPRESS_XZ
+	scripts/config	--undefine MODULE_SIG_FORCE \
+			--enable MODULE_COMPRESS \
+			--enable-after MODULE_COMPRESS MODULE_COMPRESS_XZ
 
 	### Networking support
-	scripts/config --enable NETFILTER_INGRESS \
-					--module NET_SCH_CAKE
+	scripts/config	--enable NETFILTER_INGRESS \
+			--module NET_SCH_CAKE
 
 	### Device Drivers
-	scripts/config --enable FRAMEBUFFER_CONSOLE_DEFERRED_TAKEOVER \
-					--enable DELL_SMBIOS_SMM \
-					--module PATA_JMICRON \
-					--enable SND_OSSEMUL \
-					--module-after SND_OSSEMUL SND_MIXER_OSS \
-					--module-after SND_MIXER_OSS SND_PCM_OSS \
-					--enable-after SND_PCM_OSS SND_PCM_OSS_PLUGINS
+	scripts/config	--enable FRAMEBUFFER_CONSOLE_DEFERRED_TAKEOVER \
+			--enable DELL_SMBIOS_SMM \
+			--module PATA_JMICRON \
+			--enable SND_OSSEMUL \
+			--module-after SND_OSSEMUL SND_MIXER_OSS \
+			--module-after SND_MIXER_OSS SND_PCM_OSS \
+			--enable-after SND_PCM_OSS SND_PCM_OSS_PLUGINS
 
-	### Security options
-	scripts/config --enable SECURITY_SMACK \
-				 	--enable-after SECURITY_SMACK SECURITY_SMACK_BRINGUP \
-				 	--enable-after SECURITY_SMACK_BRINGUP SECURITY_SMACK_NETFILTER \
-				 	--enable-after SECURITY_SMACK_NETFILTER SECURITY_SMACK_APPEND_SIGNALS \
-				 	--enable SECURITY_TOMOYO \
-				 	--enable SECURITY_APPARMOR \
-				 	--enable SECURITY_YAMA
-
+	# Security options
+        scripts/config --enable SECURITY_SELINUX \
+                       --enable-after SECURITY_SELINUX SECURITY_SELINUX_BOOTPARAM \
+                       --enable SECURITY_SMACK \
+                       --enable-after SECURITY_SMACK SECURITY_SMACK_BRINGUP \
+                       --enable-after SECURITY_SMACK_BRINGUP SECURITY_SMACK_NETFILTER \
+                       --enable-after SECURITY_SMACK_NETFILTER SECURITY_SMACK_APPEND_SIGNALS \
+                       --enable SECURITY_TOMOYO \
+                       --enable SECURITY_APPARMOR \
+                       --enable SECURITY_YAMA	
+	
 	### AMD and KVM stuff
-	scripts/config --enable HAVE_KVM \
-					--module KVM \
-					--module KVM_INTEL \
-					--module KVM_AMD \
-					--enable KVM_AMD_SEV \
-					--enable DRM_AMD_DC_DCN2_0 \
-					--enable AMD_IOMMU \
-					--enable AMD_IOMMU_V2 \
-					--module GPIO_AMD_FCH \
-					--enable MICROCODE_AMD
+	scripts/config	--enable HAVE_KVM \
+			--module KVM \
+			--module KVM_INTEL \
+			--module KVM_AMD \
+			--enable KVM_AMD_SEV \
+			--enable DRM_AMD_DC_DCN2_0 \
+			--enable AMD_IOMMU \
+			--enable AMD_IOMMU_V2 \
+			--module GPIO_AMD_FCH \
+			--enable MICROCODE_AMD
 
 	### Default Manjaro loglevel
-	scripts/config --set-val CONSOLE_LOGLEVEL_DEFAULT 4 \
-					--set-val CONSOLE_LOGLEVEL_QUIET 1 \
-					--set-val MESSAGE_LOGLEVEL_DEFAULT 7 \
-					--undefine TTY_PRINTK
+	scripts/config	--set-val CONSOLE_LOGLEVEL_DEFAULT 4 \
+			--set-val CONSOLE_LOGLEVEL_QUIET 1 \
+			--set-val MESSAGE_LOGLEVEL_DEFAULT 7 \
+			--undefine TTY_PRINTK
 
 	### Disable GCC plugins for ccache-friendly build
 	if [ "$_ccache_friendly" = "y" ] ; then
-		scripts/config --disable GCC_PLUGINS \
-						--undefine GCC_PLUGIN_STRUCTLEAK \
-						--undefine GCC_PLUGIN_STRUCTLEAK_BYREF_ALL
+		scripts/config	--disable GCC_PLUGINS \
+				--undefine GCC_PLUGIN_STRUCTLEAK \
+				--undefine GCC_PLUGIN_STRUCTLEAK_BYREF_ALL
 	fi
 
 	make olddefconfig
