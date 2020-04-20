@@ -87,18 +87,18 @@ _enable_bootsplash='n'
 _enable_pci_acs_override='y'
 
 # Use prebaked Manjaro kernel configurations.
-_use_manjaro_configs='y'
+_use_manjaro_configs='n'
 
 ##! IMPORTANT: Do no edit anything below this line unless you know what you're .
 
 _major=5.6
-_minor=3
+_minor=5
 _rel=1
 _kernelname='clear'
 _basekernel=${_major}
 _basever=${_major/./}
 _srcname=linux-${_major}
-_clr=${_major}.3-935
+_clr=${_major}.4-937
 _aufs='20200302'
 _gcc_more_v='20191217'
 
@@ -144,8 +144,6 @@ source=(
 	### [END OF PATCH-3]
 
 	### [PATCH-4] Manjaro Patches
-	'0001-ALSA-hda-Fix-potential-access-overflow-in-beep-helpe.patch'
-        '0002-ALSA-ice1724-Fix-invalid-access-for-enumerated-ctl-i.patch'
 	'0001-apparmor-patch-to-provide-compatibility-with-v2-net-rules.patch'
 	'0002-apparmor-af_unix-mediation.patch'
 	'0003-apparmor-fix-use-after-free-in-sk_peer_label.patch'
@@ -166,7 +164,7 @@ source=(
 	### [END OF PATCH-7]
 
 	### [PATCH-8] Personal custom patches, you might not need this. Comment any patch that you don't need.
-	##! No additional patches needed ATM.
+	'0001-amdgpu-fixes-linux-5.6.patch'
 	### [END OF PATCH-8]
 
 	### [PATCH-9] Bootsplash: Add bootsplash - http://lkml.iu.edu/hypermail/linux/kernel/1710.3/01542.html
@@ -187,7 +185,7 @@ source=(
         )
 sha256sums=('e342b04a2aa63808ea0ef1baab28fc520bd031ef8cf93d9ee4a31d4058fcb622'
             'SKIP'
-            'a677aa98df0fc907314130b511feef3108717d98c405c98a51dde4e06d1c492c'
+            'c7938429c4db6fb086f769400e694aff74b5b7e6c66e3763cb6fb1b527dcf010'
             'bfe52746bfc04114627b6f1e0dd94bc05dd94abe8f6dbee770f78d6116e315e8'
             'c4c1e6dc98efba3d0af1a70a28fdeaf84ce1bfc61713c2d7159403bbab59b233'
             'b44d81446d8b53d5637287c30ae3eb64cae0078c3fbc45fcf1081dd6699818b5'
@@ -200,15 +198,14 @@ sha256sums=('e342b04a2aa63808ea0ef1baab28fc520bd031ef8cf93d9ee4a31d4058fcb622'
             '1c69ed79eeef0c0dcf68ce3086a0e372260d2fed94c93c7711e0682b2bcaae39'
             '29adcb9fac02b77f93ec36c2003ae930cc0a6ee1884d002c280480b5e8f22261'
             '7685d526bbdbfa795986591a70071c960ff572f56d3501774861728a9df8664c'
-            'd9032bb428c42e093f2686ae2830133c3600496f93574b3b41dc0ec69af6d5ad'
-            'bc53f7ec92126955e221698e634d2185909e83bc526f7ff9c7ad86da3fd8c8f4'
             '98202b8ad70d02d86603294bae967874fa7b18704b5c7b867568b0fd33a08921'
             '5cbbf3db9ea3205e9b89fe3049bea6dd626181db0cb0dc461e4cf5a400c68dd6'
             'c7dbec875d0c1d6782c037a1dcefff2e5bdb5fc9dffac1beea07dd8c1bdef1d7'
             '77746aea71ffb06c685e7769b49c78e29af9b2e28209cd245e95d9cbb0dba3c9'
-            '4743a3e408874d0f2748a0782176eb08c59705760c0a0b498dc5407e7244ad89'
+            '97d288bf5d5855e88717babe2ca1694870d177835af3090774f336be5120af9f'
             '7a4a209de815f4bae49c7c577c0584c77257e3953ac4324d2aa425859ba657f5'
             '4127910703ed934224941114c2a4e0bcc5b4841f46d04063ed7b20870a51baa0'
+            '00c6f638636e578884e3da25eb050cb92f111edee07faa64a853eab58d0448d6'
             'a504f6cf84094e08eaa3cc5b28440261797bf4f06f04993ee46a20628ff2b53c'
             'e096b127a5208f56d368d2cb938933454d7200d70c86b763aa22c38e0ddb8717'
             '8c1c880f2caa9c7ae43281a35410203887ea8eae750fe8d360d0c8bf80fcc6e0'
@@ -414,6 +411,9 @@ prepare() {
 				--undefine GCC_PLUGIN_STRUCTLEAK \
 				--undefine GCC_PLUGIN_STRUCTLEAK_BYREF_ALL
 	fi
+	
+	## Library routines
+	scripts/config --enable FONT_TER16x32
 
 	make olddefconfig
 
