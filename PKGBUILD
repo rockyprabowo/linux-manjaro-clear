@@ -74,9 +74,6 @@ _use_current='n'
 # Unlock additional CPU optimizations for gcc
 _enable_gcc_more_v='y'
 
-# Enable ccache-friendly build
-_ccache_friendly='y'
-
 # Include AUFS support. Manjaro includes this to their kernel by default
 _enable_aufs='n'
 
@@ -89,16 +86,19 @@ _enable_pci_acs_override='y'
 # Use prebaked Manjaro kernel configurations.
 _use_manjaro_configs='n'
 
+# Enable ccache via PKGBUILD options
+_enable_ccache='y'
+
 ##! IMPORTANT: Do no edit anything below this line unless you know what you're .
 
 _major=5.6
-_minor=6
+_minor=7
 _rel=1
 _kernelname='clear'
 _basekernel=${_major}
 _basever=${_major/./}
 _srcname=linux-${_major}
-_clr=${_major}.4-938
+_clr=${_major}.5-941
 _aufs='20200302'
 _gcc_more_v='20191217'
 
@@ -130,13 +130,13 @@ source=(
 
 	### [PATCH-2] AUFS Patches
  	"aufs5.x-rcN-${_aufs}.patch"
-        'aufs5-base.patch'
-        'aufs5-kbuild.patch'
-        'aufs5-loopback.patch'
-        'aufs5-mmap.patch'
-        'aufs5-standalone.patch'
-        'tmpfs-idr.patch'
-        'vfs-ino.patch'
+    'aufs5-base.patch'
+    'aufs5-kbuild.patch'
+    'aufs5-loopback.patch'
+    'aufs5-mmap.patch'
+    'aufs5-standalone.patch'
+    'tmpfs-idr.patch'
+    'vfs-ino.patch'
 	### [END OF PATCH-2]
 
 	### [PATCH-3] Arch Linux Patches
@@ -185,7 +185,7 @@ source=(
         )
 sha256sums=('e342b04a2aa63808ea0ef1baab28fc520bd031ef8cf93d9ee4a31d4058fcb622'
             'SKIP'
-            '669e3bebb988e7f1124e6687e384304ed70139ea4a869bd4159c3df27c3d9082'
+            'a91bbeb913be661b64adf3adca12844c03c89fb801b1cc87ccb0af43d2eae460'
             'bfe52746bfc04114627b6f1e0dd94bc05dd94abe8f6dbee770f78d6116e315e8'
             'c4c1e6dc98efba3d0af1a70a28fdeaf84ce1bfc61713c2d7159403bbab59b233'
             'b44d81446d8b53d5637287c30ae3eb64cae0078c3fbc45fcf1081dd6699818b5'
@@ -202,7 +202,7 @@ sha256sums=('e342b04a2aa63808ea0ef1baab28fc520bd031ef8cf93d9ee4a31d4058fcb622'
             '5cbbf3db9ea3205e9b89fe3049bea6dd626181db0cb0dc461e4cf5a400c68dd6'
             'c7dbec875d0c1d6782c037a1dcefff2e5bdb5fc9dffac1beea07dd8c1bdef1d7'
             '77746aea71ffb06c685e7769b49c78e29af9b2e28209cd245e95d9cbb0dba3c9'
-            '6d909aeebc1379e02aaa52a3b4984acf6a06b8a6b9f6e118f1b251883d411986'
+            'fb9e8e3cb0125415bff103e91b2887dbfb68d5f99521859e5586606aee39fb49'
             '7a4a209de815f4bae49c7c577c0584c77257e3953ac4324d2aa425859ba657f5'
             '4127910703ed934224941114c2a4e0bcc5b4841f46d04063ed7b20870a51baa0'
             'a504f6cf84094e08eaa3cc5b28440261797bf4f06f04993ee46a20628ff2b53c'
@@ -232,13 +232,13 @@ _source_acs_override_patches=(
 _source_aufs_patches=(
 	'config.aufs'
 	"aufs5.x-rcN-${_aufs}.patch"
-        'aufs5-base.patch'
-        'aufs5-kbuild.patch'
-        'aufs5-loopback.patch'
-        'aufs5-mmap.patch'
-        'aufs5-standalone.patch'
-        'tmpfs-idr.patch'
-        'vfs-ino.patch'
+    'aufs5-base.patch'
+    'aufs5-kbuild.patch'
+    'aufs5-loopback.patch'
+    'aufs5-mmap.patch'
+    'aufs5-standalone.patch'
+    'tmpfs-idr.patch'
+    'vfs-ino.patch'
 )
 
 _source_bootsplash_patches=(
@@ -263,16 +263,18 @@ validpgpkeys=(
 )
 
 _bootstrap() {
-	if [ "$_ccache_friendly" = "y" ] ; then
-		export KBUILD_BUILD_HOST=manjaro
-		export KBUILD_BUILD_USER=build
-		export KBUILD_BUILD_TIMESTAMP="Thu, 01 Jan 1970 00:00:00 +0000"
-	else
-		export KBUILD_BUILD_HOST=$HOST
-		export KBUILD_BUILD_USER=$USER
-		export KBUILD_BUILD_TIMESTAMP="$(date -Ru${SOURCE_DATE_EPOCH:+d @$SOURCE_DATE_EPOCH})"
-	fi
+    if [ "$_enable_ccache" = "y" ] ; then
+        export KBUILD_BUILD_HOST=manjaro
+        export KBUILD_BUILD_USER=build
+        export KBUILD_BUILD_TIMESTAMP="Thu, 01 Jan 1970 00:00:00 +0000"
+    else
+        export KBUILD_BUILD_HOST=$HOST
+        export KBUILD_BUILD_USER=$USER
+        export KBUILD_BUILD_TIMESTAMP="$(date -Ru${SOURCE_DATE_EPOCH:+d @$SOURCE_DATE_EPOCH})"
+    fi
+
 	[ "$_enable_aufs" = "y" ] || _source_skip_auto_patch+=("${_source_aufs_patches[@]}")
+	[ "$_enable_ccache" = "y" ] && options+=('ccache') || options+=('!ccache')
 	[ "$_enable_bootsplash" = "y" ] || _source_skip_auto_patch+=("${_source_bootsplash_patches[@]}")
 	[ "$_enable_pci_acs_override" = "y" ] || _source_skip_auto_patch+=("${_source_acs_override_patches[@]}")
 }
@@ -349,68 +351,67 @@ prepare() {
 	msg2 "Enable extra stuff from Arch and Manjaro kernel..."
 
 	### General setup
-	scripts/config	--enable IKCONFIG \
-			--enable-after IKCONFIG IKCONFIG_PROC \
-			--undefine RT_GROUP_SCHED
+	scripts/config  --enable IKCONFIG \
+			        --enable-after IKCONFIG IKCONFIG_PROC \
+			        --undefine RT_GROUP_SCHED
 
 	### Power management and ACPI options
-	scripts/config	--enable ACPI_REV_OVERRIDE_POSSIBLE  \
-			--enable ACPI_TABLE_UPGRADE
+	scripts/config  --enable ACPI_REV_OVERRIDE_POSSIBLE  \
+			        --enable ACPI_TABLE_UPGRADE
 
 	### Enable loadable module support
 	scripts/config	--undefine MODULE_SIG_FORCE \
-			--enable MODULE_COMPRESS \
-			--enable-after MODULE_COMPRESS MODULE_COMPRESS_XZ
+			        --enable MODULE_COMPRESS \
+			        --enable-after MODULE_COMPRESS MODULE_COMPRESS_XZ
 
 	### Networking support
 	scripts/config	--enable NETFILTER_INGRESS \
-			--module NET_SCH_CAKE
+			        --module NET_SCH_CAKE
 
 	### Device Drivers
 	scripts/config	--enable FRAMEBUFFER_CONSOLE_DEFERRED_TAKEOVER \
-			--enable DELL_SMBIOS_SMM \
-			--module PATA_JMICRON \
-			--enable SND_OSSEMUL \
-			--module-after SND_OSSEMUL SND_MIXER_OSS \
-			--module-after SND_MIXER_OSS SND_PCM_OSS \
-			--enable-after SND_PCM_OSS SND_PCM_OSS_PLUGINS
+			        --enable DELL_SMBIOS_SMM \
+			        --module PATA_JMICRON \
+			        --enable SND_OSSEMUL \
+			        --module-after SND_OSSEMUL SND_MIXER_OSS \
+			        --module-after SND_MIXER_OSS SND_PCM_OSS \
+			        --enable-after SND_PCM_OSS SND_PCM_OSS_PLUGINS
 
 	# Security options
-        scripts/config --enable SECURITY_SELINUX \
-                       --enable-after SECURITY_SELINUX SECURITY_SELINUX_BOOTPARAM \
-                       --enable SECURITY_SMACK \
-                       --enable-after SECURITY_SMACK SECURITY_SMACK_BRINGUP \
-                       --enable-after SECURITY_SMACK_BRINGUP SECURITY_SMACK_NETFILTER \
-                       --enable-after SECURITY_SMACK_NETFILTER SECURITY_SMACK_APPEND_SIGNALS \
-                       --enable SECURITY_TOMOYO \
-                       --enable SECURITY_APPARMOR \
-                       --enable SECURITY_YAMA	
-	
+    scripts/config  --enable SECURITY_SELINUX \
+                    --enable-after SECURITY_SELINUX SECURITY_SELINUX_BOOTPARAM \
+                    --enable SECURITY_SMACK \
+                    --enable-after SECURITY_SMACK SECURITY_SMACK_BRINGUP \
+                    --enable-after SECURITY_SMACK_BRINGUP SECURITY_SMACK_NETFILTER \
+                    --enable-after SECURITY_SMACK_NETFILTER SECURITY_SMACK_APPEND_SIGNALS \
+                    --enable SECURITY_TOMOYO \
+                    --enable SECURITY_APPARMOR \
+                    --enable SECURITY_YAMA
+
 	### AMD and KVM stuff
 	scripts/config	--enable HAVE_KVM \
-			--module KVM \
-			--module KVM_INTEL \
-			--module KVM_AMD \
-			--enable KVM_AMD_SEV \
-			--enable DRM_AMD_DC_DCN2_0 \
-			--enable AMD_IOMMU \
-			--enable AMD_IOMMU_V2 \
-			--module GPIO_AMD_FCH \
-			--enable MICROCODE_AMD
+			        --module KVM \
+			        --module KVM_INTEL \
+			        --module KVM_AMD \
+			        --enable KVM_AMD_SEV \
+			        --enable DRM_AMD_DC_DCN2_0 \
+			        --enable AMD_IOMMU \
+			        --enable AMD_IOMMU_V2 \
+			        --module GPIO_AMD_FCH \
+			        --enable MICROCODE_AMD
 
 	### Default Manjaro loglevel
 	scripts/config	--set-val CONSOLE_LOGLEVEL_DEFAULT 4 \
-			--set-val CONSOLE_LOGLEVEL_QUIET 1 \
-			--set-val MESSAGE_LOGLEVEL_DEFAULT 7 \
-			--undefine TTY_PRINTK
+			        --set-val CONSOLE_LOGLEVEL_QUIET 1 \
+			        --set-val MESSAGE_LOGLEVEL_DEFAULT 7 \
+			        --undefine TTY_PRINTK
+    ### Disable GCC plugins for ccache-friendly build
+    if [ "$_enable_ccache" = "y" ] ; then
+        scripts/config  --disable GCC_PLUGINS \
+                        --undefine GCC_PLUGIN_STRUCTLEAK \
+                        --undefine GCC_PLUGIN_STRUCTLEAK_BYREF_ALL
+    fi
 
-	### Disable GCC plugins for ccache-friendly build
-	if [ "$_ccache_friendly" = "y" ] ; then
-		scripts/config	--disable GCC_PLUGINS \
-				--undefine GCC_PLUGIN_STRUCTLEAK \
-				--undefine GCC_PLUGIN_STRUCTLEAK_BYREF_ALL
-	fi
-	
 	## Library routines
 	scripts/config --enable FONT_TER16x32
 
