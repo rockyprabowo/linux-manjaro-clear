@@ -92,13 +92,13 @@ _enable_ccache='y'
 ##! IMPORTANT: Do no edit anything below this line unless you know what you're .
 
 _major=5.6
-_minor=7
+_minor=10
 _rel=1
 _kernelname='clear'
 _basekernel=${_major}
 _basever=${_major/./}
 _srcname=linux-${_major}
-_clr=${_major}.5-941
+_clr=${_major}.8-945
 _aufs='20200302'
 _gcc_more_v='20191217'
 
@@ -185,7 +185,7 @@ source=(
         )
 sha256sums=('e342b04a2aa63808ea0ef1baab28fc520bd031ef8cf93d9ee4a31d4058fcb622'
             'SKIP'
-            'a91bbeb913be661b64adf3adca12844c03c89fb801b1cc87ccb0af43d2eae460'
+            'd342dc77e23ba7faff4767b9f5fd1cdeaabb4d5141b87900a7f10bf733284342'
             'bfe52746bfc04114627b6f1e0dd94bc05dd94abe8f6dbee770f78d6116e315e8'
             'c4c1e6dc98efba3d0af1a70a28fdeaf84ce1bfc61713c2d7159403bbab59b233'
             'b44d81446d8b53d5637287c30ae3eb64cae0078c3fbc45fcf1081dd6699818b5'
@@ -202,9 +202,9 @@ sha256sums=('e342b04a2aa63808ea0ef1baab28fc520bd031ef8cf93d9ee4a31d4058fcb622'
             '5cbbf3db9ea3205e9b89fe3049bea6dd626181db0cb0dc461e4cf5a400c68dd6'
             'c7dbec875d0c1d6782c037a1dcefff2e5bdb5fc9dffac1beea07dd8c1bdef1d7'
             '77746aea71ffb06c685e7769b49c78e29af9b2e28209cd245e95d9cbb0dba3c9'
-            'fb9e8e3cb0125415bff103e91b2887dbfb68d5f99521859e5586606aee39fb49'
+            'f9a142d82fa413166e5adb3014f8a730a21dcfb18325f4be821a88659b819f51'
             '7a4a209de815f4bae49c7c577c0584c77257e3953ac4324d2aa425859ba657f5'
-            '4127910703ed934224941114c2a4e0bcc5b4841f46d04063ed7b20870a51baa0'
+            '2c98de0814366b041aeee4cbf82b82620c7834bc33752d50f089e8bd7ea5cf5e'
             'a504f6cf84094e08eaa3cc5b28440261797bf4f06f04993ee46a20628ff2b53c'
             'e096b127a5208f56d368d2cb938933454d7200d70c86b763aa22c38e0ddb8717'
             '8c1c880f2caa9c7ae43281a35410203887ea8eae750fe8d360d0c8bf80fcc6e0'
@@ -306,8 +306,7 @@ prepare() {
 
 	### Add Clear Linux patches
 	msg2 "Applying Clear Linux patches..."
-	for i in $(grep '^Patch' ${srcdir}/linux-${_clr}/linux.spec |\
-			grep -Ev '^Patch0123' | sed -n 's/.*: //p'); do
+	for i in $(grep '^Patch' ${srcdir}/linux-${_clr}/linux.spec | sed -n 's/.*: //p'); do
 			echo "Applying patch ${i}..."
 		patch -Np1 -i "$srcdir/linux-${_clr}/${i}"
 	done
